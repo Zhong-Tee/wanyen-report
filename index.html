@@ -1,668 +1,979 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Professional Sales Report</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Reporting Dashboard</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: '#2563eb',
-              secondary: '#64748b',
-              moshi: '#ec4899',
-              b2s: '#eab308',
-              wanyen: '#3b82f6'
-            },
-            fontFamily: {
-              sans: ['Inter', 'system-ui', 'sans-serif']
-            }
-          }
-        }
-      }
-    </script>
     
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- Import Map -->
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-        "recharts": "https://esm.sh/recharts@2.12.3?external=react,react-dom",
-        "lucide-react": "https://esm.sh/lucide-react@0.344.0?external=react",
-        "date-fns": "https://esm.sh/date-fns@3.3.1",
-        "papaparse": "https://esm.sh/papaparse@5.4.1"
-      }
-    }
-    </script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- PapaParse for robust CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
-      body { font-family: 'Inter', sans-serif; }
-      /* Custom Scrollbar for tables */
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: #f1f5f9;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 3px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-      }
+        /* Custom Scrollbar for tables */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .loading-overlay {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(2px);
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-slate-900 min-h-screen">
-    <div id="root">
-        <!-- Initial Loading State -->
-        <div class="flex items-center justify-center h-screen flex-col gap-4">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p class="text-slate-500">Loading Application...</p>
-        </div>
-    </div>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
 
-    <!-- Error Handler -->
-    <script>
-      window.onerror = function(message, source, lineno, colno, error) {
-        const root = document.getElementById('root');
-        root.innerHTML = `
-          <div class="flex items-center justify-center h-screen p-4">
-            <div class="bg-white p-8 rounded-xl shadow-xl max-w-lg w-full border border-red-100">
-              <h2 class="text-2xl font-bold text-red-600 mb-4">Application Error</h2>
-              <p class="text-slate-600 mb-4">Something went wrong while loading the application.</p>
-              <div class="bg-slate-100 p-4 rounded text-xs font-mono text-red-500 overflow-auto">
-                ${message}
-              </div>
-              <button onclick="window.location.reload()" class="mt-6 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">
-                Reload Page
-              </button>
-            </div>
-          </div>
-        `;
-        console.error(error);
-      };
-    </script>
-
-    <script type="text/babel" data-type="module">
-      import React, { useState, useMemo, useEffect } from 'react';
-      import ReactDOM from 'react-dom/client';
-      import { 
-        BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-        LineChart, Line, PieChart, Pie, Cell, AreaChart, Area 
-      } from 'recharts';
-      import { format, isValid } from 'date-fns';
-      import { 
-        UploadCloud, FileSpreadsheet, Calendar, Filter, DollarSign, 
-        ShoppingCart, MapPin, TrendingUp, Package, PieChart as PieIcon,
-        BarChart3, Upload
-      } from 'lucide-react';
-      import Papa from 'papaparse';
-
-      // --- Constants ---
-      const BranchGroup = {
-        MOSHI: 'Moshi',
-        B2S: 'B2S',
-        WANYEN: 'Wanyen',
-        UNKNOWN: 'Unknown'
-      };
-
-      const COLORS = {
-        [BranchGroup.MOSHI]: '#ec4899', // Pink
-        [BranchGroup.B2S]: '#eab308',   // Yellow
-        [BranchGroup.WANYEN]: '#3b82f6', // Blue
-        [BranchGroup.UNKNOWN]: '#94a3b8' // Gray
-      };
-
-      // --- Utils ---
-      const formatCurrency = (val) => 
-        new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 0 }).format(val);
-
-      const formatNumber = (val) => 
-        new Intl.NumberFormat('th-TH').format(val);
-
-      const getBranchGroup = (branchName) => {
-        if (!branchName) return BranchGroup.WANYEN; // Default as per requirement 7.3 if not B2S/Moshi
-        const normalized = branchName.toLowerCase();
-        if (normalized.includes('moshi') || normalized.includes('ms ')) {
-          return BranchGroup.MOSHI;
-        }
-        if (normalized.includes('b2s')) {
-          return BranchGroup.B2S;
-        }
-        return BranchGroup.WANYEN;
-      };
-
-      const parseThaiDate = (dateStr) => {
-        try {
-          if (!dateStr || typeof dateStr !== 'string') return null;
-          
-          // Handle "1/11/2568 10:04" format
-          const [dPart, tPart] = dateStr.trim().split(' ');
-          if (!dPart) return null;
-          
-          const parts = dPart.split('/');
-          if (parts.length !== 3) return null;
-          
-          const day = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10);
-          const yearBE = parseInt(parts[2], 10);
-          
-          // Convert Buddhist Era to Christian Era
-          // Heuristic: If year > 2400, assume BE
-          const yearAD = yearBE > 2400 ? yearBE - 543 : yearBE;
-          
-          const dateObj = new Date(yearAD, month - 1, day);
-          
-          if (tPart) {
-              const [hour, minute] = tPart.split(':').map(Number);
-              if (!isNaN(hour) && !isNaN(minute)) {
-                dateObj.setHours(hour);
-                dateObj.setMinutes(minute);
-              }
-          }
-
-          return !isNaN(dateObj.getTime()) ? dateObj : null;
-        } catch (e) {
-          console.warn("Date parse error:", dateStr);
-          return null;
-        }
-      };
-
-      const processCSV = (file) => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (event) => {
-            try {
-              const text = event.target.result;
-              const lines = text.split('\n');
-              
-              // Find header row (contains "วันที่" and "ยอดรวม")
-              let headerIdx = -1;
-              for(let i=0; i<lines.length && i<20; i++) {
-                if(lines[i].includes('วันที่') && lines[i].includes('ยอดรวม')) {
-                  headerIdx = i;
-                  break;
-                }
-              }
-
-              if (headerIdx === -1) throw new Error("Could not find header row with 'วันที่' and 'ยอดรวม'");
-
-              // Clean data from header downwards
-              const csvData = lines.slice(headerIdx).join('\n');
-              
-              Papa.parse(csvData, {
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                  const data = results.data
-                    .filter(row => row['วันที่'] && row['ยอดรวม'] && row['branch']) // Filter valid rows
-                    .map((row, idx) => {
-                      const date = parseThaiDate(row['วันที่']);
-                      if (!date) return null;
-
-                      // Clean numbers (remove commas)
-                      const quantity = parseFloat(row['จำนวน']?.replace(/,/g, '') || '0');
-                      const total = parseFloat(row['ยอดรวม']?.replace(/,/g, '') || '0');
-                      const branch = row['branch']?.trim() || 'Unknown';
-
-                      return {
-                        id: idx,
-                        date,
-                        product: row['สินค้า'] || 'Unknown',
-                        quantity,
-                        total,
-                        branch,
-                        payment: row['payment'],
-                        group: getBranchGroup(branch)
-                      };
-                    })
-                    .filter(item => item !== null);
-                  
-                  resolve(data);
-                },
-                error: (err) => reject(err)
-              });
-            } catch (err) {
-              reject(err);
-            }
-          };
-          reader.readAsText(file);
-        });
-      };
-
-      // --- Components ---
-
-      const KPICard = ({ title, value, subtext, icon, color }) => (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-start justify-between hover:shadow-md transition-shadow duration-200">
-          <div>
-            <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-            <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
-            {subtext && <p className="text-xs text-slate-400 mt-2">{subtext}</p>}
-          </div>
-          <div className={`p-3 rounded-lg ${color} text-white shadow-sm`}>
-            {icon}
-          </div>
-        </div>
-      );
-
-      const Dashboard = ({ data, dateRange }) => {
-        const [viewMode, setViewMode] = useState('daily'); // 'daily' | 'monthly'
-
-        // Filter data by date range
-        const filteredData = useMemo(() => {
-          if (!dateRange.start && !dateRange.end) return data;
-          const start = dateRange.start ? dateRange.start.getTime() : -Infinity;
-          const end = dateRange.end ? dateRange.end.getTime() : Infinity;
-          
-          return data.filter(d => {
-            const t = d.date.getTime();
-            return t >= start && t <= end;
-          });
-        }, [data, dateRange]);
-
-        // Calculate Stats
-        const stats = useMemo(() => {
-          const totalRevenue = filteredData.reduce((s, i) => s + i.total, 0);
-          const totalQty = filteredData.reduce((s, i) => s + i.quantity, 0);
-          const totalTx = filteredData.length;
-          const avgPrice = totalQty > 0 ? totalRevenue / totalQty : 0;
-          
-          const groups = {
-            [BranchGroup.MOSHI]: { count: 0, sales: 0, branches: new Set() },
-            [BranchGroup.B2S]: { count: 0, sales: 0, branches: new Set() },
-            [BranchGroup.WANYEN]: { count: 0, sales: 0, branches: new Set() }
-          };
-
-          filteredData.forEach(d => {
-            if(groups[d.group]) {
-              groups[d.group].count++;
-              groups[d.group].sales += d.total;
-              groups[d.group].branches.add(d.branch);
-            }
-          });
-
-          return { totalRevenue, totalQty, totalTx, avgPrice, groups };
-        }, [filteredData]);
-
-        // Chart Data: Timeline
-        const chartData = useMemo(() => {
-          const map = {};
-          filteredData.forEach(d => {
-            let key;
-            let sortTime;
-            if (viewMode === 'monthly') {
-              key = format(d.date, 'MMM yyyy');
-              sortTime = new Date(d.date.getFullYear(), d.date.getMonth(), 1).getTime();
-            } else {
-              key = format(d.date, 'dd/MM/yyyy');
-              const day = new Date(d.date);
-              day.setHours(0,0,0,0);
-              sortTime = day.getTime();
-            }
-
-            if (!map[key]) map[key] = { name: key, sales: 0, sortTime };
-            map[key].sales += d.total;
-          });
-          return Object.values(map).sort((a,b) => a.sortTime - b.sortTime);
-        }, [filteredData, viewMode]);
-
-        // Ranking: Branches
-        const topBranches = useMemo(() => {
-          const map = {};
-          filteredData.forEach(d => {
-            if (!map[d.branch]) map[d.branch] = { name: d.branch, sales: 0, group: d.group };
-            map[d.branch].sales += d.total;
-          });
-          return Object.values(map).sort((a,b) => b.sales - a.sales).slice(0, 10);
-        }, [filteredData]);
-
-        // Ranking: Products
-        const topProducts = useMemo(() => {
-          const map = {};
-          filteredData.forEach(d => {
-            if (!map[d.product]) map[d.product] = { name: d.product, qty: 0, sales: 0 };
-            map[d.product].qty += d.quantity;
-            map[d.product].sales += d.total;
-          });
-          // Sort by Sales (Requirement 4: Best selling, usually implies revenue, but can toggle)
-          // Let's sort by revenue
-          return Object.values(map).sort((a,b) => b.sales - a.sales).slice(0, 10);
-        }, [filteredData]);
-
-        // Pie Data
-        const pieData = Object.keys(stats.groups).map(g => ({
-          name: g,
-          value: stats.groups[g].sales
-        })).filter(d => d.value > 0);
-
-        return (
-          <div className="space-y-6 pb-20 animate-fade-in">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <KPICard 
-                title="Total Revenue" 
-                value={formatCurrency(stats.totalRevenue)}
-                subtext={`From ${formatNumber(stats.totalTx)} transactions`}
-                icon={<DollarSign size={24} />}
-                color="bg-emerald-500"
-              />
-              <KPICard 
-                title="Total Sheets Sold" 
-                value={formatNumber(stats.totalQty)}
-                subtext="Units sold"
-                icon={<Package size={24} />}
-                color="bg-blue-500"
-              />
-              <KPICard 
-                title="Avg. Price / Sheet" 
-                value={formatCurrency(stats.avgPrice)}
-                subtext="Revenue / Quantity"
-                icon={<TrendingUp size={24} />}
-                color="bg-violet-500"
-              />
-              <KPICard 
-                title="Active Branches" 
-                value={Object.values(stats.groups).reduce((acc, g) => acc + g.branches.size, 0)}
-                subtext="Total unique locations"
-                icon={<MapPin size={24} />}
-                color="bg-rose-500"
-              />
-            </div>
-
-            {/* Main Charts Area */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Sales Trend */}
-              <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <BarChart3 size={20} className="text-slate-400"/> Sales Over Time
-                  </h3>
-                  <div className="flex bg-slate-100 p-1 rounded-lg text-xs font-medium">
-                    <button 
-                      onClick={() => setViewMode('daily')}
-                      className={`px-3 py-1 rounded-md transition ${viewMode==='daily' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
-                    >Daily</button>
-                    <button 
-                      onClick={() => setViewMode('monthly')}
-                      className={`px-3 py-1 rounded-md transition ${viewMode==='monthly' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
-                    >Monthly</button>
-                  </div>
-                </div>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
-                      <defs>
-                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9"/>
-                      <XAxis 
-                        dataKey="name" 
-                        tick={{fontSize: 12, fill: '#64748b'}} 
-                        axisLine={false} 
-                        tickLine={false} 
-                        dy={10}
-                      />
-                      <YAxis 
-                        tickFormatter={(val) => `${val/1000}k`} 
-                        tick={{fontSize: 12, fill: '#64748b'}} 
-                        axisLine={false} 
-                        tickLine={false}
-                      />
-                      <Tooltip formatter={(value) => formatCurrency(value)} contentStyle={{borderRadius: '8px', border:'none', boxShadow:'0 4px 6px -1px rgb(0 0 0 / 0.1)'}}/>
-                      <Area type="monotone" dataKey="sales" stroke="#3b82f6" fillOpacity={1} fill="url(#colorSales)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Group Distribution */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <PieIcon size={20} className="text-slate-400"/> Sales by Group
-                </h3>
-                <div className="h-48 flex-shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%" cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[entry.name]} strokeWidth={0} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(val) => formatCurrency(val)} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 overflow-y-auto mt-4 pr-1 custom-scrollbar">
-                  {Object.entries(stats.groups).map(([name, val]) => (
-                    <div key={name} className="flex justify-between items-center p-2 rounded hover:bg-slate-50 text-sm">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{background: COLORS[name]}}></div>
-                        <div>
-                          <p className="font-semibold text-slate-700">{name}</p>
-                          <p className="text-xs text-slate-400">{val.branches.size} branches</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-slate-700">{formatCurrency(val.sales)}</p>
-                        <p className="text-xs text-slate-400">{formatNumber(val.count)} orders</p>
-                      </div>
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-600 text-white p-1.5 rounded-lg shadow-sm">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
                     </div>
-                  ))}
+                    <div>
+                        <h1 class="text-xl font-bold text-slate-900 tracking-tight">SalesPulse</h1>
+                        <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Analytics Dashboard</p>
+                    </div>
                 </div>
-              </div>
+                <div class="flex items-center gap-4">
+                    <button id="clearDataBtn" class="text-sm text-red-600 hover:text-red-800 font-medium hidden">
+                        Clear Database
+                    </button>
+                    <span id="firebaseStatus" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                        <span class="w-2 h-2 mr-1.5 bg-slate-400 rounded-full"></span>
+                        Connecting...
+                    </span>
+                </div>
             </div>
+        </div>
+    </nav>
 
-            {/* Rankings */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Top Branches */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Top 10 Branches (Revenue)</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-slate-500 font-medium">
-                      <tr>
-                        <th className="px-4 py-2 rounded-l-lg">Rank</th>
-                        <th className="px-4 py-2">Branch</th>
-                        <th className="px-4 py-2">Group</th>
-                        <th className="px-4 py-2 text-right rounded-r-lg">Sales</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topBranches.map((b, i) => (
-                        <tr key={i} className="border-b border-slate-50 last:border-0 hover:bg-slate-50">
-                          <td className="px-4 py-3 text-slate-400 font-mono">#{i+1}</td>
-                          <td className="px-4 py-3 font-medium text-slate-700 truncate max-w-[150px]" title={b.name}>{b.name}</td>
-                          <td className="px-4 py-3">
-                            <span className="text-[10px] px-2 py-1 rounded-full text-white font-bold" style={{backgroundColor: COLORS[b.group]}}>
-                              {b.group}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(b.sales)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
-              {/* Top Products */}
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Top 10 Products (Revenue)</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-slate-500 font-medium">
-                      <tr>
-                        <th className="px-4 py-2 rounded-l-lg">Rank</th>
-                        <th className="px-4 py-2">Product</th>
-                        <th className="px-4 py-2 text-right">Qty</th>
-                        <th className="px-4 py-2 text-right rounded-r-lg">Sales</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {topProducts.map((p, i) => (
-                        <tr key={i} className="border-b border-slate-50 last:border-0 hover:bg-slate-50">
-                          <td className="px-4 py-3 text-slate-400 font-mono">#{i+1}</td>
-                          <td className="px-4 py-3 font-medium text-slate-700">{p.name}</td>
-                          <td className="px-4 py-3 text-right text-blue-600 font-semibold">{formatNumber(p.qty)}</td>
-                          <td className="px-4 py-3 text-right text-slate-500">{formatCurrency(p.sales)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+        <!-- 1. Data Import Section -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                <h2 class="text-lg font-semibold text-slate-900">Data Import</h2>
+                <span class="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-200">Supports .csv exports</span>
             </div>
-          </div>
-        );
-      };
-
-      const App = () => {
-        const [data, setData] = useState(null);
-        const [loading, setLoading] = useState(false);
-        const [error, setError] = useState(null);
-        const [dateRange, setDateRange] = useState({ start: null, end: null });
-
-        const handleFileUpload = async (e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-
-          setLoading(true);
-          setError(null);
-          try {
-            const parsed = await processCSV(file);
-            if (parsed.length === 0) throw new Error("No valid data found. Check CSV format.");
             
-            // Set Date Range
-            const times = parsed.map(d => d.date.getTime()).sort((a,b) => a-b);
-            setDateRange({
-              start: new Date(times[0]),
-              end: new Date(times[times.length-1])
+            <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
+                <div class="flex-1 w-full">
+                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Upload CSV File</label>
+                    <input type="file" id="csvFileInput" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-300 rounded-lg cursor-pointer focus:outline-none transition-colors">
+                </div>
+                <button id="importBtn" class="w-full md:w-auto px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all active:scale-95">
+                    <div class="flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Import & Save
+                    </div>
+                </button>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div id="importProgress" class="mt-6 hidden transition-all">
+                <div class="flex justify-between text-xs text-slate-600 mb-1">
+                    <span>Uploading...</span>
+                    <span id="importStatusText">0%</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="importMessage" class="mt-2 text-sm font-medium"></div>
+        </section>
+
+        <!-- 2. Controls & Filters -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in" style="animation-delay: 0.1s">
+            <h2 class="text-lg font-semibold text-slate-900 mb-4">Filters</h2>
+            
+            <div class="flex flex-col lg:flex-row justify-between gap-6">
+                <!-- Date Range -->
+                <div class="flex flex-col sm:flex-row gap-4 items-end">
+                    <div class="w-full sm:w-auto">
+                        <label for="startDate" class="block text-sm font-medium text-slate-700 mb-1.5">From Date</label>
+                        <input type="date" id="startDate" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2.5 bg-slate-50">
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <label for="endDate" class="block text-sm font-medium text-slate-700 mb-1.5">To Date</label>
+                        <input type="date" id="endDate" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2.5 bg-slate-50">
+                    </div>
+                    <button id="applyFilterBtn" class="w-full sm:w-auto px-6 py-2.5 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-all shadow-sm">
+                        Apply Filter
+                    </button>
+                </div>
+
+                <!-- Quick Buttons -->
+                <div class="flex flex-col gap-1.5 w-full lg:w-auto">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Quick Range</span>
+                    <div class="flex flex-wrap gap-2">
+                        <button data-range="7d" class="quick-filter-btn px-4 py-2 bg-white text-slate-600 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">Last 7 Days</button>
+                        <button data-range="1m" class="quick-filter-btn px-4 py-2 bg-white text-slate-600 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">Last 1 Month</button>
+                        <button data-range="1y" class="quick-filter-btn px-4 py-2 bg-white text-slate-600 text-sm font-medium rounded-lg border border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">Last 1 Year</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. KPI Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Card 1 -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200 hover:shadow-md transition-shadow animate-fade-in" style="animation-delay: 0.2s">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-emerald-50 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-slate-500 truncate">Total Sales</dt>
+                                <dd class="text-2xl font-bold text-slate-900 mt-1" id="kpiTotalSales">0.00</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200 hover:shadow-md transition-shadow animate-fade-in" style="animation-delay: 0.25s">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-blue-50 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-slate-500 truncate">Sheets Sold</dt>
+                                <dd class="text-2xl font-bold text-slate-900 mt-1" id="kpiTotalSheets">0</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200 hover:shadow-md transition-shadow animate-fade-in" style="animation-delay: 0.3s">
+                <div class="p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 bg-amber-50 rounded-lg p-3">
+                            <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-slate-500 truncate">Avg Sales / Sheet</dt>
+                                <dd class="text-2xl font-bold text-slate-900 mt-1" id="kpiAvgSales">0.00</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Chart Section -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in" style="animation-delay: 0.35s">
+            <h2 class="text-lg font-semibold text-slate-900 mb-6">Sales Trend</h2>
+            <div class="relative h-80 w-full">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </section>
+
+        <!-- 5. Rankings Tables -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" style="animation-delay: 0.4s">
+            
+            <!-- Product Ranking -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[32rem]">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h3 class="text-lg font-semibold text-slate-900">Best-Selling Products</h3>
+                </div>
+                <div class="overflow-y-auto flex-1 p-0">
+                    <table class="min-w-full divide-y divide-slate-100">
+                        <thead class="bg-white sticky top-0 shadow-sm z-10">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Product</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Sheets</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-50" id="productTableBody">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Branch Ranking -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[32rem]">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h3 class="text-lg font-semibold text-slate-900">Best-Selling Branches</h3>
+                </div>
+                <div class="overflow-y-auto flex-1 p-0">
+                    <table class="min-w-full divide-y divide-slate-100">
+                        <thead class="bg-white sticky top-0 shadow-sm z-10">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Branch</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Sheets</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Sales</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-50" id="branchTableBody">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Raw Data Preview (Optional Debug) -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in" style="animation-delay: 0.45s">
+            <div class="px-6 py-4 border-b border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('rawDataContainer').classList.toggle('hidden')">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-medium text-slate-900">Raw Data Inspector <span class="text-sm font-normal text-slate-500 ml-2">(Last 50 Loaded)</span></h3>
+                    <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </div>
+            </div>
+            <div id="rawDataContainer" class="hidden overflow-x-auto bg-slate-50">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Product</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Branch</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Qty</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-100" id="rawDataTableBody">
+                        <!-- Raw Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-slate-400 text-sm">© 2025 SalesPulse Dashboard. Built with Firebase & Tailwind.</p>
+        </div>
+    </footer>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            writeBatch, 
+            doc, 
+            query, 
+            where, 
+            getDocs, 
+            Timestamp,
+            orderBy,
+            limit,
+            deleteDoc
+        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        // ==========================================
+        // 1. FIREBASE CONFIGURATION
+        // ==========================================
+        // TODO: Replace with your actual Firebase project configuration
+        // Go to Firebase Console -> Project Settings -> General -> Your Apps -> SDK Setup and Configuration
+	const firebaseConfig = {
+  		apiKey: "AIzaSyBJaOWw1sBJhdqIL0r0SmuXnNv3IimJ8EQ",
+  		authDomain: "wy-salesreport.firebaseapp.com",
+  		projectId: "wy-salesreport",
+  		storageBucket: "wy-salesreport.firebasestorage.app",
+  		messagingSenderId: "60076528808",
+  		appId: "1:60076528808:web:e607be516901eddcac1e9d",
+  		measurementId: "G-400WR05KDG"
+};
+
+
+        // Initialize Firebase
+        let app, db, auth;
+        const statusBadge = document.getElementById('firebaseStatus');
+        const clearDataBtn = document.getElementById('clearDataBtn');
+
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            // Anonymous Authentication
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    statusBadge.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-green-500 rounded-full"></span>Connected';
+                    statusBadge.classList.remove('bg-slate-100', 'text-slate-600');
+                    statusBadge.classList.add('bg-green-50', 'text-green-700', 'border-green-200');
+                    // Enable import only when auth is ready
+                    document.getElementById('importBtn').disabled = false;
+                    
+                    // Allow clearing data (utility)
+                    clearDataBtn.classList.remove('hidden');
+                    
+                    // Initial Data Load (Last 30 Days)
+                    triggerQuickFilter('1m');
+                } else {
+                    signInAnonymously(auth).catch((error) => {
+                        console.error("Auth Error", error);
+                        statusBadge.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-red-500 rounded-full"></span>Auth Failed';
+                        statusBadge.classList.add('bg-red-50', 'text-red-700', 'border-red-200');
+                    });
+                }
             });
-            setData(parsed);
-          } catch (err) {
-            console.error(err);
-            setError(err.message || "Failed to process file");
-          } finally {
-            setLoading(false);
-          }
-        };
 
-        const handleDateChange = (type, val) => {
-          const d = val ? new Date(val) : null;
-          if (d) {
-            if (type === 'start') d.setHours(0,0,0,0);
-            if (type === 'end') d.setHours(23,59,59,999);
-          }
-          setDateRange(prev => ({...prev, [type]: d}));
-        };
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+            statusBadge.innerHTML = 'Config Error';
+            statusBadge.classList.add('bg-red-100', 'text-red-800');
+        }
 
-        return (
-          <div className="min-h-screen pb-10">
-            {/* Nav */}
-            <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
-              <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-indigo-600">
-                  <div className="p-2 bg-indigo-600 text-white rounded-lg shadow-sm">
-                    <FileSpreadsheet size={20} />
-                  </div>
-                  <span className="font-bold text-lg tracking-tight text-slate-800">Sales Insight Pro</span>
-                </div>
+        // ==========================================
+        // 2. DOM ELEMENTS
+        // ==========================================
+        const fileInput = document.getElementById('csvFileInput');
+        const importBtn = document.getElementById('importBtn');
+        const progressBar = document.getElementById('progressBar');
+        const importStatusText = document.getElementById('importStatusText');
+        const importMessage = document.getElementById('importMessage');
+        const importProgressContainer = document.getElementById('importProgress');
+
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const applyFilterBtn = document.getElementById('applyFilterBtn');
+        const quickFilterBtns = document.querySelectorAll('.quick-filter-btn');
+
+        // ==========================================
+        // 3. STATE & GLOBALS
+        // ==========================================
+        let currentChart = null;
+        const COLLECTION_NAME = 'sales_records';
+
+        // ==========================================
+        // 4. CSV PARSING LOGIC
+        // ==========================================
+        
+        /**
+         * Parses a date string. Supports Thai Buddhist Era (BE) often found in local CSVs.
+         * Example: "1/11/2568 10:04" -> BE 2568 is AD 2025.
+         */
+        function parseCustomDate(dateStr) {
+            if (!dateStr) return null;
+            
+            // Expected format: "D/M/YYYY HH:mm"
+            // Example: "1/11/2568 10:04"
+            const parts = dateStr.trim().split(' ');
+            const datePart = parts[0]; // 1/11/2568
+            const timePart = parts.length > 1 ? parts[1] : "00:00:00"; 
+
+            // Simple check if it matches standard date string, otherwise parse manually
+            if (datePart.includes('/')) {
+                const dateSegments = datePart.split('/');
+                if (dateSegments.length === 3) {
+                    let day = parseInt(dateSegments[0], 10);
+                    let month = parseInt(dateSegments[1], 10) - 1; // JS months are 0-based
+                    let year = parseInt(dateSegments[2], 10);
+
+                    // Handle Buddhist Era (BE) -> AD Conversion
+                    // If year > 2400, assume BE and subtract 543
+                    if (year > 2400) {
+                        year = year - 543;
+                    }
+
+                    const timeSegments = timePart.split(':');
+                    let hours = 0, minutes = 0, seconds = 0;
+                    if (timeSegments.length >= 2) {
+                        hours = parseInt(timeSegments[0], 10);
+                        minutes = parseInt(timeSegments[1], 10);
+                        if (timeSegments.length === 3) seconds = parseInt(timeSegments[2], 10);
+                    }
+
+                    return new Date(year, month, day, hours, minutes, seconds);
+                }
+            }
+            
+            // Fallback
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        /**
+         * Standardizes data from CSV row based on fixed indices
+         * Indices based on provided CSV structure:
+         * 1: Date/Time (B)
+         * 3: Product (D)
+         * 9: Quantity (J)
+         * 10: Total Amount (K) - based on CSV header 'ยอดรวม' (Total), assuming calculated total
+         * 11: Payment (L)
+         * 14: Branch (O)
+         */
+        function transformRow(row) {
+            // Access by index. PapaParse with header:false gives array of strings.
+            
+            // Validation: Ensure row has enough columns
+            if (row.length < 15) return null;
+
+            const dateTimeRaw = row[1];
+            // Basic filtering of header rows or empty rows
+            if (!dateTimeRaw || dateTimeRaw.includes("วันที่") || dateTimeRaw.includes("Date")) return null; 
+
+            const jsDate = parseCustomDate(dateTimeRaw);
+            if (!jsDate || isNaN(jsDate.getTime())) return null; // Invalid date
+
+            const quantity = parseInt(row[9] || '0', 10);
+            const total = parseFloat((row[10] || '0').replace(/,/g, '')); // Remove commas if any
+            
+            // Calculate price per sheet if needed, though we use total directly
+            const price = quantity > 0 ? total / quantity : 0;
+
+            // Date Formatting for storage strings
+            const yyyy = jsDate.getFullYear();
+            const mm = String(jsDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(jsDate.getDate()).padStart(2, '0');
+            const dateString = `${yyyy}-${mm}-${dd}`;
+            const timeString = jsDate.toTimeString().split(' ')[0]; // HH:mm:ss
+
+            return {
+                transactionDate: dateString,
+                transactionTime: timeString,
+                timestamp: Timestamp.fromDate(jsDate),
+                product: (row[3] || 'Unknown').trim(),
+                quantity: quantity,
+                pricePerSheet: parseFloat(price.toFixed(2)),
+                totalAmount: total,
+                paymentType: (row[11] || 'Unknown').trim(),
+                branchName: (row[14] || 'Unknown').trim()
+            };
+        }
+
+        // ==========================================
+        // 5. IMPORT HANDLER
+        // ==========================================
+        importBtn.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Please select a CSV file first.");
+                return;
+            }
+
+            if (!db) {
+                alert("Firebase is not configured. Check the code.");
+                return;
+            }
+
+            importProgressContainer.classList.remove('hidden');
+            importMessage.textContent = "Parsing CSV...";
+            importMessage.className = "mt-2 text-sm text-slate-600";
+            importBtn.disabled = true;
+
+            Papa.parse(file, {
+                header: false, // Use index based parsing
+                skipEmptyLines: true,
+                complete: async function(results) {
+                    const rows = results.data;
+                    const parsedData = [];
+
+                    for (let i = 0; i < rows.length; i++) {
+                        const record = transformRow(rows[i]);
+                        if (record) {
+                            parsedData.push(record);
+                        }
+                    }
+
+                    if (parsedData.length === 0) {
+                        importMessage.textContent = "No valid data rows found.";
+                        importMessage.className = "mt-2 text-sm text-red-600";
+                        importBtn.disabled = false;
+                        importProgressContainer.classList.add('hidden');
+                        return;
+                    }
+
+                    await saveCsvRows(parsedData);
+                },
+                error: function(err) {
+                    importMessage.textContent = "Error parsing CSV: " + err.message;
+                    importMessage.className = "mt-2 text-sm text-red-600";
+                    importBtn.disabled = false;
+                }
+            });
+        });
+
+        // Example CRUD function: saveCsvRows (Bulk Upload)
+        async function saveCsvRows(data) {
+            importMessage.textContent = `Uploading ${data.length} records to Firestore...`;
+            
+            const batchSize = 500;
+            const totalBatches = Math.ceil(data.length / batchSize);
+            let recordsUploaded = 0;
+
+            try {
+                for (let i = 0; i < totalBatches; i++) {
+                    const batch = writeBatch(db);
+                    const start = i * batchSize;
+                    const end = Math.min(start + batchSize, data.length);
+                    
+                    for (let j = start; j < end; j++) {
+                        const docRef = doc(collection(db, COLLECTION_NAME));
+                        batch.set(docRef, data[j]);
+                    }
+
+                    await batch.commit();
+                    recordsUploaded += (end - start);
+                    
+                    // Update Progress
+                    const pct = Math.round((recordsUploaded / data.length) * 100);
+                    progressBar.style.width = `${pct}%`;
+                    importStatusText.textContent = `${pct}%`;
+                }
+
+                importMessage.textContent = "Upload Complete!";
+                importMessage.className = "mt-2 text-sm text-green-600 font-medium";
+                importBtn.disabled = false;
                 
-                {data && (
-                  <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                    <div className="px-3 py-1 flex items-center gap-2 text-sm text-slate-600 border-r border-slate-200 pr-4">
-                      <Calendar size={14} />
-                      <span className="hidden sm:inline">Range:</span>
-                    </div>
-                    <input 
-                      type="date" 
-                      className="bg-transparent text-sm text-slate-700 outline-none w-28 cursor-pointer"
-                      onChange={(e) => handleDateChange('start', e.target.value)}
-                      defaultValue={dateRange.start ? format(dateRange.start, 'yyyy-MM-dd') : ''}
-                    />
-                    <span className="text-slate-400">-</span>
-                    <input 
-                      type="date" 
-                      className="bg-transparent text-sm text-slate-700 outline-none w-28 cursor-pointer"
-                      onChange={(e) => handleDateChange('end', e.target.value)}
-                      defaultValue={dateRange.end ? format(dateRange.end, 'yyyy-MM-dd') : ''}
-                    />
-                  </div>
-                )}
-              </div>
-            </nav>
+                // Refresh data if dates are set, otherwise set default range (last 30 days) and load
+                triggerQuickFilter('1m');
 
-            <main className="max-w-7xl mx-auto px-4 mt-8">
-              {!data ? (
-                <div className="max-w-lg mx-auto mt-20 animate-fade-in-up">
-                  <div className="bg-white p-10 rounded-2xl shadow-xl border border-slate-100 text-center relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+                // Hide progress after a delay
+                setTimeout(() => {
+                    importProgressContainer.classList.add('hidden');
+                    progressBar.style.width = '0%';
+                }, 3000);
+
+            } catch (error) {
+                console.error("Upload failed", error);
+                importMessage.textContent = "Upload failed: " + error.message;
+                importMessage.className = "mt-2 text-sm text-red-600";
+                importBtn.disabled = false;
+            }
+        }
+
+        // Example CRUD function: Clear Collection (Utility)
+        clearDataBtn.addEventListener('click', async () => {
+            if (!confirm("Are you sure you want to delete ALL sales records from the database? This cannot be undone.")) return;
+            
+            clearDataBtn.disabled = true;
+            clearDataBtn.textContent = "Clearing...";
+            
+            try {
+                // Warning: This is a client-side delete loop. For massive datasets, use Cloud Functions or the Firebase CLI.
+                // Fetch in batches and delete
+                let deletedCount = 0;
+                while (true) {
+                    const q = query(collection(db, COLLECTION_NAME), limit(500));
+                    const snapshot = await getDocs(q);
                     
-                    <div className="mb-6 flex justify-center">
-                      <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center shadow-inner">
-                        <UploadCloud size={40} />
-                      </div>
-                    </div>
+                    if (snapshot.size === 0) break;
                     
-                    <h2 className="text-2xl font-bold text-slate-800 mb-3">Upload Report CSV</h2>
-                    <p className="text-slate-500 mb-8 text-sm leading-relaxed">
-                      Please upload your sales report file (.csv). <br/>
-                      System will automatically group Moshi, B2S, and Wanyen branches.
-                    </p>
+                    const batch = writeBatch(db);
+                    snapshot.docs.forEach((doc) => {
+                        batch.delete(doc.ref);
+                    });
+                    
+                    await batch.commit();
+                    deletedCount += snapshot.size;
+                    console.log(`Deleted ${deletedCount} docs...`);
+                }
+                
+                alert(`Database cleared. Deleted ${deletedCount} records.`);
+                // Reset View
+                loadDataByDateRange(new Date(), new Date()); 
+                
+            } catch (error) {
+                console.error("Clear failed", error);
+                alert("Error clearing data: " + error.message);
+            } finally {
+                clearDataBtn.disabled = false;
+                clearDataBtn.textContent = "Clear Database";
+            }
+        });
 
-                    <label className="block relative group cursor-pointer">
-                      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg blur opacity-30 group-hover:opacity-100 transition duration-200"></div>
-                      <div className="relative flex items-center justify-center gap-3 bg-white border-2 border-indigo-50 hover:border-indigo-100 rounded-lg p-4 transition-all">
-                        <span className="font-semibold text-indigo-600 group-hover:text-indigo-700">Choose CSV File</span>
-                        <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
-                      </div>
-                    </label>
+        // ==========================================
+        // 6. DASHBOARD LOGIC (FETCH & RENDER)
+        // ==========================================
 
-                    {loading && (
-                      <div className="mt-6 flex flex-col items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-xs font-medium text-indigo-600">Processing...</span>
-                      </div>
-                    )}
+        // --- Filter Logic ---
+        
+        applyFilterBtn.addEventListener('click', () => {
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+            if(start && end) {
+                loadDataByDateRange(new Date(start), new Date(end));
+                updateActiveButton(null);
+            } else {
+                alert("Please select both start and end dates.");
+            }
+        });
 
-                    {error && (
-                      <div className="mt-6 p-3 bg-red-50 text-red-600 text-xs rounded border border-red-100">
-                        {error}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <Dashboard data={data} dateRange={dateRange} />
-              )}
-            </main>
-          </div>
-        );
-      };
+        quickFilterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const range = e.target.getAttribute('data-range');
+                triggerQuickFilter(range);
+                updateActiveButton(e.target);
+            });
+        });
 
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(<App />);
+        function updateActiveButton(activeBtn) {
+            quickFilterBtns.forEach(btn => {
+                if(btn === activeBtn) {
+                    btn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+                    btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+                } else {
+                    btn.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
+                    btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                }
+            });
+        }
+
+        function triggerQuickFilter(range) {
+            const end = new Date();
+            const start = new Date();
+            
+            // Set end to end of today
+            end.setHours(23, 59, 59, 999);
+
+            if (range === '7d') {
+                start.setDate(end.getDate() - 7);
+            } else if (range === '1m') {
+                start.setMonth(end.getMonth() - 1);
+            } else if (range === '1y') {
+                start.setFullYear(end.getFullYear() - 1);
+            }
+            
+            // Set start to beginning of day
+            start.setHours(0, 0, 0, 0);
+
+            // Update inputs
+            // Format for input type="date" is YYYY-MM-DD
+            const formatDate = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            startDateInput.value = formatDate(start);
+            endDateInput.value = formatDate(end);
+
+            loadDataByDateRange(start, end);
+        }
+
+        // --- Data Loading (CRUD: Read) ---
+
+        async function loadDataByDateRange(startDate, endDate) {
+            if (!db) return;
+
+            // Show loading state
+            document.body.style.cursor = 'wait';
+            applyFilterBtn.disabled = true;
+            applyFilterBtn.textContent = "Loading...";
+
+            try {
+                // Convert JS dates to Firestore Timestamps
+                const startTs = Timestamp.fromDate(startDate);
+                
+                // Fix end date to include the full day selected (e.g. 23:59:59)
+                const adjustedEndDate = new Date(endDate);
+                adjustedEndDate.setHours(23, 59, 59, 999);
+                const endTs = Timestamp.fromDate(adjustedEndDate);
+
+                const q = query(
+                    collection(db, COLLECTION_NAME),
+                    where("timestamp", ">=", startTs),
+                    where("timestamp", "<=", endTs),
+                    orderBy("timestamp", "asc")
+                );
+
+                const querySnapshot = await getDocs(q);
+                const records = [];
+                querySnapshot.forEach((doc) => {
+                    records.push(doc.data());
+                });
+
+                if (records.length === 0) {
+                    console.log("No records found for range");
+                }
+
+                processAndRender(records, startDate, adjustedEndDate);
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                if (error.message.includes('requires an index')) {
+                    alert("Firestore Index Required: Please check the console for the link to create the index automatically.");
+                } else {
+                    alert("Error fetching data: " + error.message);
+                }
+            } finally {
+                document.body.style.cursor = 'default';
+                applyFilterBtn.disabled = false;
+                applyFilterBtn.textContent = "Apply Filter";
+            }
+        }
+
+        // --- Data Processing & Rendering ---
+
+        function processAndRender(records, startDate, endDate) {
+            // 1. Calculate KPIs
+            let totalSales = 0;
+            let totalSheets = 0;
+            const productStats = {};
+            const branchStats = {};
+            const timeSeriesData = {}; // Key: timestamp label, Value: sum
+
+            // Determine grouping granularity for chart
+            const timeDiff = endDate - startDate;
+            const daysDiff = timeDiff / (1000 * 3600 * 24);
+            const groupByHour = daysDiff <= 7;
+
+            records.forEach(rec => {
+                const salesVal = Number(rec.totalAmount) || 0;
+                const qtyVal = Number(rec.quantity) || 0;
+
+                totalSales += salesVal;
+                totalSheets += qtyVal;
+
+                // Product Ranking
+                const prodName = rec.product || 'Unknown';
+                if (!productStats[prodName]) productStats[prodName] = { sheets: 0, sales: 0 };
+                productStats[prodName].sheets += qtyVal;
+                productStats[prodName].sales += salesVal;
+
+                // Branch Ranking
+                const branchName = rec.branchName || 'Unknown';
+                if (!branchStats[branchName]) branchStats[branchName] = { sheets: 0, sales: 0 };
+                branchStats[branchName].sheets += qtyVal;
+                branchStats[branchName].sales += salesVal;
+
+                // Time Series
+                // Safety check if timestamp is missing or invalid
+                if (rec.timestamp) {
+                    const dateObj = rec.timestamp.toDate();
+                    let key;
+                    if (groupByHour) {
+                        // YYYY-MM-DD HH:00
+                        const y = dateObj.getFullYear();
+                        const m = String(dateObj.getMonth()+1).padStart(2,'0');
+                        const d = String(dateObj.getDate()).padStart(2,'0');
+                        const h = String(dateObj.getHours()).padStart(2,'0');
+                        key = `${y}-${m}-${d} ${h}:00`;
+                    } else {
+                        // YYYY-MM-DD
+                        const y = dateObj.getFullYear();
+                        const m = String(dateObj.getMonth()+1).padStart(2,'0');
+                        const d = String(dateObj.getDate()).padStart(2,'0');
+                        key = `${y}-${m}-${d}`;
+                    }
+
+                    if (!timeSeriesData[key]) timeSeriesData[key] = 0;
+                    timeSeriesData[key] += salesVal;
+                }
+            });
+
+            const avgSales = totalSheets > 0 ? (totalSales / totalSheets) : 0;
+
+            // 2. Render KPIs
+            // Format currency
+            const currencyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'THB' }); 
+            const numberFmt = new Intl.NumberFormat('en-US');
+
+            document.getElementById('kpiTotalSales').textContent = currencyFmt.format(totalSales);
+            document.getElementById('kpiTotalSheets').textContent = numberFmt.format(totalSheets);
+            document.getElementById('kpiAvgSales').textContent = currencyFmt.format(avgSales);
+
+            // 3. Render Tables
+            renderTable('productTableBody', productStats);
+            renderTable('branchTableBody', branchStats);
+
+            // 4. Render Chart
+            renderChart(timeSeriesData, groupByHour ? 'hour' : 'day');
+
+            // 5. Render Raw Data (First 50)
+            renderRawData(records.slice(0, 50));
+        }
+
+        function renderTable(elementId, statsObj) {
+            const tbody = document.getElementById(elementId);
+            tbody.innerHTML = '';
+
+            // Convert to array and sort by Sales descending
+            const sorted = Object.entries(statsObj)
+                .map(([name, data]) => ({ name, ...data }))
+                .sort((a, b) => b.sales - a.sales);
+
+            const currencyFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const numberFmt = new Intl.NumberFormat('en-US');
+
+            if (sorted.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-slate-500">No data available</td></tr>';
+                return;
+            }
+
+            sorted.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-slate-900">${item.name}</td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-600 text-right">${numberFmt.format(item.sheets)}</td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-600 text-right font-mono">${currencyFmt.format(item.sales)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderRawData(records) {
+            const tbody = document.getElementById('rawDataTableBody');
+            tbody.innerHTML = '';
+            const currencyFmt = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 });
+
+            if (records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-slate-500">No records loaded</td></tr>';
+                return;
+            }
+
+            records.forEach(rec => {
+                let dateStr = "N/A";
+                if (rec.timestamp) {
+                    const d = rec.timestamp.toDate();
+                    dateStr = `${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+                }
+                
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-4 py-2 text-sm text-slate-900 whitespace-nowrap">${dateStr}</td>
+                    <td class="px-4 py-2 text-sm text-slate-600 max-w-xs truncate" title="${rec.product}">${rec.product}</td>
+                    <td class="px-4 py-2 text-sm text-slate-600 max-w-xs truncate" title="${rec.branchName}">${rec.branchName}</td>
+                    <td class="px-4 py-2 text-sm text-slate-600 text-right">${rec.quantity}</td>
+                    <td class="px-4 py-2 text-sm text-slate-600 text-right font-mono">${currencyFmt.format(rec.totalAmount)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderChart(dataObj, unit) {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            
+            // Sort keys to ensure chronological order
+            const labels = Object.keys(dataObj).sort();
+            const values = labels.map(k => dataObj[k]);
+
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            // Empty data handling
+            if (labels.length === 0) {
+                // Could render a placeholder, but ChartJS handles empty somewhat gracefully.
+            }
+
+            currentChart = new Chart(ctx, {
+                type: 'bar', // Bar is often better for sales volume per time unit, line for trends
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Sales',
+                        data: values,
+                        backgroundColor: 'rgba(79, 70, 229, 0.7)', // Indigo 600
+                        borderColor: 'rgb(79, 70, 229)',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        barPercentage: 0.6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 12,
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 },
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'THB' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            },
+                            ticks: {
+                                maxTicksLimit: 12,
+                                color: '#64748b'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#f1f5f9',
+                                borderDash: [2, 2]
+                            },
+                            ticks: {
+                                color: '#64748b',
+                                callback: function(value) {
+                                    if (value >= 1000) {
+                                        return (value / 1000).toFixed(0) + 'k';
+                                    }
+                                    return value;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
     </script>
 </body>
 </html>
