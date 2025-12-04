@@ -14,8 +14,8 @@
     <!-- PapaParse for robust CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-    <!-- Supabase JS Client (CDN) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase JS Client (FIXED CDN URL for Browser) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <style>
         /* Custom Scrollbar */
@@ -388,9 +388,8 @@
         // 1. SUPABASE CONFIGURATION
         // ============================
         const SUPABASE_URL = 'https://lgaobgxeybmlrbsjgnfh.supabase.co';
-        // NOTE: Standard Supabase keys usually start with 'eyJ...'. 
-        // If the key below fails, please check Project Settings > API > anon public key
-        const SUPABASE_KEY = 'sb_publishable_Y6fHy4gC6BCUua_XzjEkBQ_xjeX1qGe'; 
+        // FIXED: Using the correct Anon Public Key provided
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYW9iZ3hleWJtbHJic2pnbmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Nzk1OTYsImV4cCI6MjA4MDM1NTU5Nn0.rmGercp5u829OkeqzDq9R2wlR7lA3b2P4po2CZTXOZM';
         
         const TABLE_NAME = 'sales_records';
         
@@ -401,6 +400,7 @@
 
         // Initialize Supabase
         try {
+            // NOTE: The CDN now points to the UMD build which exposes 'supabase' globally
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             
             // Simple Connection Check
