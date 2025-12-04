@@ -3,31 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Reporting Dashboard (Supabase Fixed)</title>
+    <title>Sales Reporting (Match Table Schema)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- PapaParse for robust CSV parsing -->
+    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
-    <!-- Supabase JS Client -->
+    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <style>
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
@@ -37,28 +30,18 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center gap-3">
-                    <div class="bg-emerald-600 text-white p-1.5 rounded-lg shadow-sm">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                        </svg>
+                    <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold text-slate-900 tracking-tight">SalesPulse</h1>
-                        <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wide">
-                            Supabase Edition (Max 10k Rows)
-                        </p>
+                        <h1 class="text-xl font-bold text-slate-900">SalesPulse</h1>
+                        <p class="text-[10px] text-slate-500 uppercase">Schema Matched Edition</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <button id="clearDataBtn"
-                            class="text-sm text-red-600 hover:text-red-800 font-medium hidden">
-                        Clear Database
-                    </button>
-                    <span id="dbStatus"
-                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                        <span class="w-2 h-2 mr-1.5 bg-slate-400 rounded-full"></span>
-                        Connecting...
+                    <button id="clearDataBtn" class="text-sm text-red-600 hover:text-red-800 font-medium hidden">Clear Database</button>
+                    <span id="dbStatus" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                        <span class="w-2 h-2 mr-1.5 bg-slate-400 rounded-full"></span> Connecting...
                     </span>
                 </div>
             </div>
@@ -66,535 +49,296 @@
     </nav>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-
-        <!-- 1. Data Import Section -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
-                <h2 class="text-lg font-semibold text-slate-900">Data Import</h2>
-                <span class="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                    Supports .csv exports
-                </span>
-            </div>
-            
-            <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
+        <!-- Import -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 mb-4">Data Import</h2>
+            <div class="flex flex-col md:flex-row gap-4 items-end">
                 <div class="flex-1 w-full">
-                    <label class="block text-sm font-medium text-slate-700 mb-1.5">Upload CSV File</label>
-                    <input type="file" id="csvFileInput" accept=".csv"
-                           class="block w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4
-                                  file:rounded-lg file:border-0 file:text-sm file:font-semibold
-                                  file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100
-                                  border border-slate-300 rounded-lg cursor-pointer focus:outline-none
-                                  transition-colors">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">CSV File</label>
+                    <input type="file" id="csvFileInput" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-300 rounded-lg cursor-pointer">
                 </div>
-                <button id="importBtn"
-                        class="w-full md:w-auto px-6 py-2.5 bg-emerald-600 text-white font-medium rounded-lg
-                               hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2
-                               focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed
-                               shadow-sm transition-all active:scale-95"
-                        disabled>
-                    <div class="flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12">
-                            </path>
-                        </svg>
-                        Import & Save
-                    </div>
-                </button>
+                <button id="importBtn" class="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all" disabled>Import & Save</button>
             </div>
-            
-            <!-- Progress Bar -->
-            <div id="importProgress" class="mt-6 hidden transition-all">
-                <div class="flex justify-between text-xs text-slate-600 mb-1">
-                    <span>Uploading to Supabase...</span>
-                    <span id="importStatusText">0%</span>
-                </div>
-                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                    <div id="progressBar"
-                         class="bg-emerald-600 h-2 rounded-full transition-all duration-300"
-                         style="width: 0%"></div>
-                </div>
-            </div>
-            <div id="importMessage" class="mt-2 text-sm font-medium"></div>
+            <div id="importProgress" class="mt-4 hidden"><div class="w-full bg-slate-100 rounded-full h-2"><div id="progressBar" class="bg-indigo-600 h-2 rounded-full" style="width:0%"></div></div><p id="importStatusText" class="text-xs text-right mt-1 text-slate-500">0%</p></div>
+            <div id="importMessage" class="mt-2 text-sm"></div>
         </section>
 
-        <!-- 2. Controls & Filters -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in"
-                 style="animation-delay: 0.1s">
+        <!-- Filters -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h2 class="text-lg font-semibold text-slate-900 mb-4">Filters</h2>
-            
-            <div class="flex flex-col lg:flex-row justify-between gap-6">
-                <!-- Date Range -->
-                <div class="flex flex-col sm:flex-row gap-4 items-end">
-                    <div class="w-full sm:w-auto">
-                        <label for="startDate"
-                               class="block text-sm font-medium text-slate-700 mb-1.5">From Date</label>
-                        <input type="date" id="startDate"
-                               class="block w-full rounded-lg border-slate-300 shadow-sm
-                                      focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm
-                                      border p-2.5 bg-slate-50">
-                    </div>
-                    <div class="w-full sm:w-auto">
-                        <label for="endDate"
-                               class="block text-sm font-medium text-slate-700 mb-1.5">To Date</label>
-                        <input type="date" id="endDate"
-                               class="block w-full rounded-lg border-slate-300 shadow-sm
-                                      focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm
-                                      border p-2.5 bg-slate-50">
-                    </div>
-                    <button id="applyFilterBtn"
-                            class="w-full sm:w-auto px-6 py-2.5 bg-slate-800 text-white font-medium
-                                   rounded-lg hover:bg-slate-900 focus:outline-none focus:ring-2
-                                   focus:ring-offset-2 focus:ring-slate-500 transition-all shadow-sm">
-                        Apply Filter
-                    </button>
-                </div>
-
-                <!-- Quick Buttons -->
-                <div class="flex flex-col gap-1.5 w-full lg:w-auto">
-                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                        Quick Range
-                    </span>
-                    <div class="flex flex-wrap gap-2">
-                        <button data-range="7d"
-                                class="quick-filter-btn px-4 py-2 bg-white text-slate-600 text-sm
-                                       font-medium rounded-lg border border-slate-200 hover:bg-slate-50
-                                       hover:border-slate-300 hover:text-emerald-600 focus:outline-none
-                                       focus:ring-2 focus:ring-emerald-500 transition-all">
-                            Last 7 Days
-                        </button>
-                        <button data-range="1m"
-                                class="quick-filter-btn px-4 py-2 bg-white text-slate-600 text-sm
-                                       font-medium rounded-lg border border-slate-200 hover:bg-slate-50
-                                       hover:border-slate-300 hover:text-emerald-600 focus:outline-none
-                                       focus:ring-2 focus:ring-emerald-500 transition-all">
-                            Last 1 Month
-                        </button>
-                        <button data-range="1y"
-                                class="quick-filter-btn px-4 py-2 bg-white text-slate-600 text-sm
-                                       font-medium rounded-lg border border-slate-200 hover:bg-slate-50
-                                       hover:border-slate-300 hover:text-emerald-600 focus:outline-none
-                                       focus:ring-2 focus:ring-emerald-500 transition-all">
-                            Last 1 Year
-                        </button>
-                    </div>
+            <div class="flex flex-wrap gap-4 items-end">
+                <div><label class="block text-xs font-medium text-slate-500 mb-1">Start Date</label><input type="date" id="startDate" class="border p-2 rounded-lg text-sm"></div>
+                <div><label class="block text-xs font-medium text-slate-500 mb-1">End Date</label><input type="date" id="endDate" class="border p-2 rounded-lg text-sm"></div>
+                <button id="applyFilterBtn" class="px-4 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-900">Apply</button>
+                <div class="flex gap-2 ml-auto">
+                    <button data-range="7d" class="quick-filter-btn px-3 py-1.5 border rounded-lg text-xs hover:bg-slate-50">7 Days</button>
+                    <button data-range="1m" class="quick-filter-btn px-3 py-1.5 border rounded-lg text-xs hover:bg-slate-50">1 Month</button>
+                    <button data-range="1y" class="quick-filter-btn px-3 py-1.5 border rounded-lg text-xs hover:bg-slate-50">1 Year</button>
                 </div>
             </div>
         </section>
 
-        <!-- 3. KPI Cards -->
+        <!-- KPIs -->
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Card 1 -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200 hover:shadow-md transition-shadow animate-fade-in" style="animation-delay: 0.2s">
-                <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-emerald-50 rounded-lg p-3">
-                            <svg class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-slate-500 truncate">Total Sales</dt>
-                                <dd class="text-2xl font-bold text-slate-900 mt-1" id="kpiTotalSales">0.00</dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><p class="text-sm text-slate-500">Total Sales</p><p class="text-2xl font-bold text-slate-900 mt-1" id="kpiTotalSales">0.00</p></div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><p class="text-sm text-slate-500">Sheets Sold</p><p class="text-2xl font-bold text-slate-900 mt-1" id="kpiTotalSheets">0</p></div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><p class="text-sm text-slate-500">Avg Sales / Sheet</p><p class="text-2xl font-bold text-slate-900 mt-1" id="kpiAvgSales">0.00</p></div>
+        </section>
 
-            <!-- Card 2 -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200 hover:shadow-md transition-shadow animate-fade-in" style="animation-delay: 0.25s">
-                <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-blue-50 rounded-lg p-3">
-                            <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-slate-500 truncate">Sheets Sold</dt>
-                                <dd class="text-2xl font-bold text-slate-900 mt-1" id="kpiTotalSheets">0</dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
+        <!-- Charts -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-semibold mb-4">Daily Trend</h3>
+                <div class="h-64"><canvas id="salesChart"></canvas></div>
             </div>
-
-            <!-- Card 3 -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200 hover:shadow-md transition-shadow animate-fade-in" style="animation-delay: 0.3s">
-                <div class="p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0 bg-amber-50 rounded-lg p-3">
-                            <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                            </svg>
-                        </div>
-                        <div class="ml-5 w-0 flex-1">
-                            <dl>
-                                <dt class="text-sm font-medium text-slate-500 truncate">Avg Sales / Sheet</dt>
-                                <dd class="text-2xl font-bold text-slate-900 mt-1" id="kpiAvgSales">0.00</dd>
-                            </dl>
-                        </div>
-                    </div>
-                </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="font-semibold mb-4">Weekly Summary</h3>
+                <div class="h-40 mb-4"><canvas id="weeklyChart"></canvas></div>
+                <div class="overflow-y-auto h-24 text-sm"><table class="w-full"><tbody id="weeklyTableBody"></tbody></table></div>
             </div>
         </section>
 
-        <!-- 4. Charts & Tables -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in" style="animation-delay: 0.35s">
-            <h2 class="text-lg font-semibold text-slate-900 mb-6">Sales Trend (Time Series)</h2>
-            <div class="relative h-80 w-full"><canvas id="salesChart"></canvas></div>
-        </section>
-
-        <!-- 5. Weekly Analysis -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" style="animation-delay: 0.38s">
-            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <h2 class="text-lg font-semibold text-slate-900 mb-4">Sales by Day of Week</h2>
-                <div class="relative h-64 w-full"><canvas id="weeklyChart"></canvas></div>
+        <!-- Tables -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 h-96 flex flex-col">
+                <div class="p-4 border-b font-semibold bg-slate-50">Best Products</div>
+                <div class="overflow-auto p-0 flex-1"><table class="w-full text-sm text-left"><thead class="bg-white sticky top-0 shadow-sm"><tr><th class="p-3">Product</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total</th></tr></thead><tbody id="productTableBody"></tbody></table></div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-                    <h3 class="text-lg font-semibold text-slate-900">Weekly Summary</h3>
-                </div>
-                <div class="overflow-y-auto flex-1">
-                    <table class="min-w-full divide-y divide-slate-100">
-                        <thead class="bg-white">
-                            <tr><th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">Day</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase">Sales</th></tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50" id="weeklyTableBody"></tbody>
-                        <tfoot class="bg-slate-50 font-semibold">
-                            <tr><td class="px-4 py-3 text-sm text-slate-900">Total</td><td class="px-4 py-3 text-sm text-slate-900 text-right" id="weeklyTotalDisplay">0.00</td></tr>
-                        </tfoot>
-                    </table>
-                </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 h-96 flex flex-col">
+                <div class="p-4 border-b font-semibold bg-slate-50">Best Branches</div>
+                <div class="overflow-auto p-0 flex-1"><table class="w-full text-sm text-left"><thead class="bg-white sticky top-0 shadow-sm"><tr><th class="p-3">Branch</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total</th></tr></thead><tbody id="branchTableBody"></tbody></table></div>
             </div>
         </section>
 
-        <!-- 6. Rankings -->
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" style="animation-delay: 0.4s">
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[32rem]">
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50"><h3 class="text-lg font-semibold text-slate-900">Best-Selling Products</h3></div>
-                <div class="overflow-y-auto flex-1 p-0">
-                    <table class="min-w-full divide-y divide-slate-100">
-                        <thead class="bg-white sticky top-0 shadow-sm z-10">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Product</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Sheets</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Sales</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-slate-50" id="productTableBody"></tbody>
-                    </table>
-                </div>
+        <!-- Raw Data -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-4 bg-slate-50 cursor-pointer font-medium text-sm flex justify-between" onclick="document.getElementById('rawDataBox').classList.toggle('hidden')">
+                <span>Raw Data Inspector (Last 50)</span><span>▼</span>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[32rem]">
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50"><h3 class="text-lg font-semibold text-slate-900">Best-Selling Branches</h3></div>
-                <div class="overflow-y-auto flex-1 p-0">
-                    <table class="min-w-full divide-y divide-slate-100">
-                        <thead class="bg-white sticky top-0 shadow-sm z-10">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Branch</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Sheets</th>
-                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider bg-white">Sales</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-slate-50" id="branchTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
+            <div id="rawDataBox" class="hidden overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-100"><tr><th class="p-2">Date</th><th class="p-2">Product</th><th class="p-2">Branch</th><th class="p-2 text-right">Total</th></tr></thead><tbody id="rawDataTableBody"></tbody></table></div>
         </section>
-
-        <!-- 7. Raw Data -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in" style="animation-delay: 0.45s">
-            <div class="px-6 py-4 border-b border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('rawDataContainer').classList.toggle('hidden')">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-medium text-slate-900">Raw Data Inspector <span class="text-sm font-normal text-slate-500 ml-2">(Last 50 Loaded)</span></h3>
-                    <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
-                </div>
-            </div>
-            <div id="rawDataContainer" class="hidden overflow-x-auto bg-slate-50">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-100">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Date</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Product</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Branch</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Qty</th>
-                            <th class="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-slate-100" id="rawDataTableBody"></tbody>
-                </table>
-            </div>
-        </section>
-
     </main>
 
-    <!-- App Logic -->
     <script>
+        // CONFIG
         const SUPABASE_URL = 'https://lgaobgxeybmlrbsjgnfh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYW9iZ3hleWJtbHJic2pnbmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Nzk1OTYsImV4cCI6MjA4MDM1NTU5Nn0.rmGercp5u829OkeqzDq9R2wlR7lA3b2P4po2CZTXOZM';
         const TABLE_NAME = 'sales_records';
-        
-        let supabase;
-        const statusBadge = document.getElementById("dbStatus");
-        const clearDataBtn = document.getElementById("clearDataBtn");
-        const importBtn = document.getElementById("importBtn");
-        
-        const fileInput = document.getElementById("csvFileInput");
-        const progressBar = document.getElementById("progressBar");
-        const importStatusText = document.getElementById("importStatusText");
-        const importMessage = document.getElementById("importMessage");
-        const importProgressContainer = document.getElementById("importProgress");
-        const startDateInput = document.getElementById("startDate");
-        const endDateInput = document.getElementById("endDate");
-        const applyFilterBtn = document.getElementById("applyFilterBtn");
-        const quickFilterBtns = document.querySelectorAll(".quick-filter-btn");
 
-        let currentChart = null;
-        let weeklyChart = null;
+        // DOM
+        const els = {
+            status: document.getElementById('dbStatus'),
+            importBtn: document.getElementById('importBtn'),
+            clearBtn: document.getElementById('clearDataBtn'),
+            file: document.getElementById('csvFileInput'),
+            progress: document.getElementById('importProgress'),
+            bar: document.getElementById('progressBar'),
+            msg: document.getElementById('importMessage'),
+            start: document.getElementById('startDate'),
+            end: document.getElementById('endDate'),
+            apply: document.getElementById('applyFilterBtn')
+        };
 
-        // Init
+        let supabase, charts = {};
+
+        // 1. INIT
         try {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            supabase.from(TABLE_NAME).select('count', { count: 'exact', head: true }).then(({ error }) => {
-                if (!error || error.code === 'PGRST116') {
-                    statusBadge.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-green-500 rounded-full"></span>Connected';
-                    statusBadge.classList.replace("bg-slate-100", "bg-green-50");
-                    statusBadge.classList.replace("text-slate-600", "text-green-700");
-                    importBtn.disabled = false;
-                    clearDataBtn.classList.remove("hidden");
-                    triggerQuickFilter("1m");
+            // Check connection
+            supabase.from(TABLE_NAME).select('count', { count: 'exact', head: true }).then(({error}) => {
+                if(!error || error.code === 'PGRST116') {
+                    els.status.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-green-500 rounded-full"></span>Connected';
+                    els.status.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200";
+                    els.importBtn.disabled = false;
+                    els.clearBtn.classList.remove('hidden');
+                    triggerQuickFilter('1m');
                 } else {
-                    statusBadge.innerHTML = 'Error';
+                    els.status.innerHTML = 'Connection Failed';
+                    els.status.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200";
                     console.error(error);
                 }
             });
-        } catch (e) { console.error(e); }
+        } catch(e) { console.error(e); }
 
-        // CSV Parser
-        function parseCustomDate(dateStr) {
-            if (!dateStr) return null;
-            const parts = dateStr.trim().split(" ");
-            const datePart = parts[0];
-            const timePart = parts.length > 1 ? parts[1] : "00:00:00";
-            if (datePart.includes("/")) {
-                const s = datePart.split("/");
-                if (s.length === 3) {
-                    let y = parseInt(s[2], 10);
-                    if (y > 2400) y -= 543;
-                    const t = timePart.split(":");
-                    return new Date(y, parseInt(s[1])-1, parseInt(s[0]), parseInt(t[0]||0), parseInt(t[1]||0), parseInt(t[2]||0));
-                }
+        // 2. PARSE & TRANSFORM (FIXED FOR YOUR SCHEMA)
+        function parseDate(str) {
+            if(!str) return null;
+            const parts = str.trim().split(" ");
+            const dPart = parts[0].split("/");
+            if(dPart.length === 3) {
+                let y = parseInt(dPart[2]);
+                if(y > 2400) y -= 543;
+                const tPart = (parts[1]||"00:00:00").split(":");
+                return new Date(y, parseInt(dPart[1])-1, parseInt(dPart[0]), parseInt(tPart[0]||0), parseInt(tPart[1]||0), parseInt(tPart[2]||0));
             }
-            return new Date(dateStr);
+            return new Date(str);
         }
 
-        function transformRow(row) {
-            if (row.length < 15) return null;
-            const jsDate = parseCustomDate(row[1]);
-            if (!jsDate || isNaN(jsDate.getTime())) return null;
-            
-            const qty = parseInt(row[9] || "0", 10);
-            const total = parseFloat((row[10] || "0").replace(/,/g, ""));
-            const price = qty > 0 ? total / qty : 0;
-            const d = jsDate;
-            const dateString = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,0)}-${String(d.getDate()).padStart(2,0)}`;
+        function transform(row) {
+            if(row.length < 15) return null;
+            const dt = parseDate(row[1]);
+            if(!dt || isNaN(dt)) return null;
 
+            const qty = parseInt(row[9]||0);
+            const total = parseFloat((row[10]||"0").replace(/,/g, ""));
+            
+            // --- CRITICAL FIX: MATCHING YOUR TABLE SCHEMA (NO UNDERSCORES) ---
             return {
-                timestamp: jsDate.toISOString(),
-                transaction_date: dateString,
-                transaction_time: jsDate.toTimeString().split(" ")[0],
-                product: (row[3] || "Unknown").trim(),
+                timestamp: dt.toISOString(),
+                transactiondate: dt.toISOString().split('T')[0], // transactiondate
+                transactiontime: dt.toTimeString().split(' ')[0], // transactiontime
+                product: (row[3]||"Unknown").trim(),
                 quantity: qty,
-                price_per_sheet: parseFloat(price.toFixed(2)),
-                total_amount: total,
-                payment_type: (row[11] || "Unknown").trim(),
-                branch_name: (row[14] || "Unknown").trim()
+                pricepersheet: qty ? parseFloat((total/qty).toFixed(2)) : 0, // pricepersheet
+                totalamount: total, // totalamount (MATCHED!)
+                paymenttype: (row[11]||"Unknown").trim(), // paymenttype
+                branchname: (row[14]||"Unknown").trim() // branchname
             };
         }
 
-        // Import
-        importBtn.addEventListener("click", () => {
-            const file = fileInput.files[0];
-            if (!file) return alert("Select CSV first");
-            importProgressContainer.classList.remove("hidden");
-            importBtn.disabled = true;
-            Papa.parse(file, {
+        // 3. IMPORT
+        els.importBtn.onclick = () => {
+            const f = els.file.files[0];
+            if(!f) return alert("Choose CSV");
+            els.progress.classList.remove('hidden');
+            els.importBtn.disabled = true;
+
+            Papa.parse(f, {
                 header: false, skipEmptyLines: true,
                 complete: async (res) => {
-                    const data = [];
-                    for(let row of res.data) {
-                        const rec = transformRow(row);
-                        if(rec) data.push(rec);
+                    const rows = res.data.map(transform).filter(r => r);
+                    if(!rows.length) { els.importBtn.disabled=false; return alert("No valid rows"); }
+
+                    const batch = 500;
+                    for(let i=0; i<Math.ceil(rows.length/batch); i++) {
+                        const { error } = await supabase.from(TABLE_NAME).insert(rows.slice(i*batch, (i+1)*batch));
+                        if(error) { console.error(error); els.msg.textContent = "Error: " + error.message; break; }
+                        els.bar.style.width = Math.round(((i+1)/(rows.length/batch))*100) + "%";
                     }
-                    if(data.length===0) { importBtn.disabled=false; return alert("No valid rows"); }
-                    
-                    const batchSize = 500;
-                    for(let i=0; i<Math.ceil(data.length/batchSize); i++) {
-                        const batch = data.slice(i*batchSize, (i+1)*batchSize);
-                        await supabase.from(TABLE_NAME).insert(batch);
-                        const pct = Math.round(((i+1)/(data.length/batchSize))*100);
-                        progressBar.style.width = pct+"%";
-                        importStatusText.textContent = pct+"%";
-                    }
-                    importMessage.textContent = "Done!";
-                    importBtn.disabled = false;
-                    triggerQuickFilter("1m");
-                    setTimeout(() => importProgressContainer.classList.add("hidden"), 3000);
+                    els.msg.textContent = "Upload Complete!";
+                    els.importBtn.disabled = false;
+                    triggerQuickFilter('1m');
+                    setTimeout(() => els.progress.classList.add('hidden'), 3000);
                 }
             });
-        });
+        };
 
-        clearDataBtn.addEventListener("click", async () => {
+        // 4. CLEAR
+        els.clearBtn.onclick = async () => {
             if(!confirm("Clear all data?")) return;
             await supabase.from(TABLE_NAME).delete().neq('id', 0);
+            render([], new Date(), new Date());
             alert("Cleared");
-            processAndRender([], new Date(), new Date());
-        });
+        };
 
-        // Filter & Load
-        applyFilterBtn.addEventListener("click", () => {
-            if(startDateInput.value && endDateInput.value) {
-                loadDataByDateRange(new Date(startDateInput.value), new Date(endDateInput.value));
-            }
-        });
-
-        quickFilterBtns.forEach(btn => btn.addEventListener("click", (e) => {
-            triggerQuickFilter(e.target.dataset.range);
-        }));
-
-        function triggerQuickFilter(range) {
-            const end = new Date();
-            const start = new Date();
-            end.setHours(23,59,59,999);
-            
-            if(range === "7d") start.setDate(end.getDate() - 7);
-            else if(range === "1m") start.setMonth(end.getMonth() - 1);
-            else if(range === "1y") start.setFullYear(end.getFullYear() - 1);
-            start.setHours(0,0,0,0);
-            
-            startDateInput.value = start.toISOString().split('T')[0];
-            endDateInput.value = end.toISOString().split('T')[0];
-            loadDataByDateRange(start, end);
-        }
-
-        async function loadDataByDateRange(start, end) {
-            applyFilterBtn.textContent = "Loading...";
-            applyFilterBtn.disabled = true;
+        // 5. LOAD
+        async function load(start, end) {
             document.body.style.cursor = "wait";
+            els.apply.textContent = "...";
             
-            const endAdj = new Date(end);
-            endAdj.setHours(23,59,59,999);
-
-            // Fetch with Higher Limit
-            const { data, error } = await supabase
-                .from(TABLE_NAME)
+            const eAdj = new Date(end); eAdj.setHours(23,59,59);
+            
+            // Fixed Limit to 10,000 to ensure totals are correct
+            const { data, error } = await supabase.from(TABLE_NAME)
                 .select('*')
                 .gte('timestamp', start.toISOString())
-                .lte('timestamp', endAdj.toISOString())
-                .order('timestamp', { ascending: true })
-                .limit(10000); // <--- FIXED: Increase limit from 1000 to 10000
+                .lte('timestamp', eAdj.toISOString())
+                .limit(10000); 
 
             if(error) alert(error.message);
-            else processAndRender(data || [], start, endAdj);
+            else render(data || [], start, eAdj);
             
-            applyFilterBtn.textContent = "Apply Filter";
-            applyFilterBtn.disabled = false;
             document.body.style.cursor = "default";
+            els.apply.textContent = "Apply";
         }
 
-        function processAndRender(records, start, end) {
-            let totalSales=0, totalSheets=0;
-            const prodStats={}, branchStats={}, timeSeries={}, weekStats={0:0,1:0,2:0,3:0,4:0,5:0,6:0};
-            
-            records.forEach(rec => {
-                const sales = Number(rec.total_amount) || 0;
-                const qty = Number(rec.quantity) || 0;
-                const pName = rec.product || "Unknown";
-                const bName = rec.branch_name || "Unknown";
-                const date = new Date(rec.timestamp);
+        // 6. RENDER
+        function render(data, start, end) {
+            let sum=0, count=0;
+            const stats = { prod:{}, branch:{}, time:{}, week:[0,0,0,0,0,0,0] };
 
-                totalSales += sales;
-                totalSheets += qty;
+            data.forEach(r => {
+                // --- CRITICAL FIX: READING YOUR COLUMN NAMES (NO UNDERSCORES) ---
+                const val = Number(r.totalamount) || 0; // totalamount
+                const qty = Number(r.quantity) || 0;
+                const p = r.product || "?";
+                const b = r.branchname || "?"; // branchname
 
-                if(!prodStats[pName]) prodStats[pName]={sheets:0, sales:0};
-                prodStats[pName].sheets += qty;
-                prodStats[pName].sales += sales;
+                sum += val; count += qty;
+                
+                if(!stats.prod[p]) stats.prod[p] = {q:0, v:0};
+                stats.prod[p].q += qty; stats.prod[p].v += val;
 
-                if(!branchStats[bName]) branchStats[bName]={sheets:0, sales:0};
-                branchStats[bName].sheets += qty;
-                branchStats[bName].sales += sales;
+                if(!stats.branch[b]) stats.branch[b] = {q:0, v:0};
+                stats.branch[b].q += qty; stats.branch[b].v += val;
 
-                const dayKey = date.toISOString().split('T')[0]; // Simple Daily Grouping
-                timeSeries[dayKey] = (timeSeries[dayKey] || 0) + sales;
-                weekStats[date.getDay()] += sales;
+                const day = r.transactiondate; // transactiondate
+                stats.time[day] = (stats.time[day]||0) + val;
+                
+                const dObj = new Date(r.timestamp);
+                stats.week[dObj.getDay()] += val;
             });
 
-            // Update UI
-            const moneyFmt = new Intl.NumberFormat("en-US", { style:"currency", currency:"THB" });
-            const numFmt = new Intl.NumberFormat("en-US");
+            // UI
+            const fmt = new Intl.NumberFormat('en-US');
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
+
+            document.getElementById('kpiTotalSales').innerText = cur.format(sum);
+            document.getElementById('kpiTotalSheets').innerText = fmt.format(count);
+            document.getElementById('kpiAvgSales').innerText = cur.format(count ? sum/count : 0);
+
+            // Tables
+            const fillTable = (id, obj) => {
+                document.getElementById(id).innerHTML = Object.entries(obj)
+                    .sort((a,b) => b[1].v - a[1].v)
+                    .map(([k,v]) => `<tr class="border-b hover:bg-slate-50"><td class="p-3">${k}</td><td class="p-3 text-right">${fmt.format(v.q)}</td><td class="p-3 text-right font-mono">${cur.format(v.v)}</td></tr>`)
+                    .join('');
+            };
+            fillTable('productTableBody', stats.prod);
+            fillTable('branchTableBody', stats.branch);
+
+            // Raw Data
+            document.getElementById('rawDataTableBody').innerHTML = data.slice(0,50).map(r => 
+                `<tr class="border-b"><td class="p-2">${r.transactiondate}</td><td class="p-2">${r.product}</td><td class="p-2">${r.branchname}</td><td class="p-2 text-right">${cur.format(r.totalamount)}</td></tr>`
+            ).join('');
+
+            // Charts
+            const days = Object.keys(stats.time).sort();
+            drawChart('salesChart', 'bar', days, days.map(d=>stats.time[d]), '#4f46e5');
             
-            document.getElementById("kpiTotalSales").textContent = moneyFmt.format(totalSales);
-            document.getElementById("kpiTotalSheets").textContent = numFmt.format(totalSheets);
-            document.getElementById("kpiAvgSales").textContent = moneyFmt.format(totalSheets ? totalSales/totalSheets : 0);
-
-            renderTable("productTableBody", prodStats, moneyFmt, numFmt);
-            renderTable("branchTableBody", branchStats, moneyFmt, numFmt);
-            renderRawData(records.slice(0,50), moneyFmt);
-
-            // Chart 1: Time Series
-            if(currentChart) currentChart.destroy();
-            const sortedDates = Object.keys(timeSeries).sort();
-            currentChart = new Chart(document.getElementById("salesChart"), {
-                type: 'bar',
-                data: {
-                    labels: sortedDates,
-                    datasets: [{ label:'Sales', data: sortedDates.map(d=>timeSeries[d]), backgroundColor:'#4f46e5', borderRadius:4 }]
-                },
-                options: { maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}} }
-            });
-
-            // Chart 2: Weekly
-            if(weeklyChart) weeklyChart.destroy();
-            const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-            const dayIdx = [1,2,3,4,5,6,0];
-            const weekData = dayIdx.map(i => weekStats[i]);
+            const wDays = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            // Adjust to Mon-Sun
+            const rotWeek = [...stats.week.slice(1), stats.week[0]];
+            const rotLabels = [...wDays.slice(1), wDays[0]];
             
-            // Render Weekly Table
-            const wBody = document.getElementById("weeklyTableBody");
-            wBody.innerHTML = "";
-            dayIdx.forEach((idx, i) => {
-                wBody.innerHTML += `<tr><td class="px-4 py-2 text-sm text-slate-700">${days[i]}</td><td class="px-4 py-2 text-sm text-right font-mono">${moneyFmt.format(weekStats[idx])}</td></tr>`;
-            });
-            document.getElementById("weeklyTotalDisplay").textContent = moneyFmt.format(totalSales);
+            drawChart('weeklyChart', 'bar', rotLabels, rotWeek, '#10b981');
+            
+            // Weekly Table
+            document.getElementById('weeklyTableBody').innerHTML = rotLabels.map((d,i) => 
+                `<tr><td class="py-1">${d}</td><td class="text-right font-mono">${cur.format(rotWeek[i])}</td></tr>`
+            ).join('');
+        }
 
-            weeklyChart = new Chart(document.getElementById("weeklyChart"), {
-                type: 'bar',
-                data: {
-                    labels: days,
-                    datasets: [{ label:'Sales', data: weekData, backgroundColor:'#10b981', borderRadius:4 }]
-                },
-                options: { maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}} }
+        function drawChart(id, type, labels, data, color) {
+            if(charts[id]) charts[id].destroy();
+            charts[id] = new Chart(document.getElementById(id), {
+                type, data: { labels, datasets: [{ data, backgroundColor: color, borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { x: {grid:{display:false}} } }
             });
         }
 
-        function renderTable(id, stats, mFmt, nFmt) {
-            const tbody = document.getElementById(id);
-            tbody.innerHTML = Object.entries(stats)
-                .sort((a,b)=>b.1.sales - a.1.sales)
-                .map(([k,v]) => `<tr class="hover:bg-slate-50"><td class="px-6 py-3 text-sm font-medium">${k}</td><td class="px-6 py-3 text-sm text-right text-slate-600">${nFmt.format(v.sheets)}</td><td class="px-6 py-3 text-sm text-right font-mono">${mFmt.format(v.sales)}</td></tr>`)
-                .join("");
-        }
+        // EVENTS
+        els.apply.onclick = () => load(new Date(els.start.value), new Date(els.end.value));
+        document.querySelectorAll('.quick-filter-btn').forEach(b => b.onclick = (e) => triggerQuickFilter(e.target.dataset.range));
 
-        function renderRawData(rows, mFmt) {
-            document.getElementById("rawDataTableBody").innerHTML = rows.map(r => {
-                const d = new Date(r.timestamp);
-                const ds = `${d.getDate()}/${d.getMonth()+1}/${String(d.getFullYear()).slice(-2)} ${String(d.getHours()).padStart(2,0)}:${String(d.getMinutes()).padStart(2,0)}`;
-                return `<tr class="hover:bg-slate-50"><td class="px-4 py-2 text-sm">${ds}</td><td class="px-4 py-2 text-sm truncate max-w-xs">${r.product}</td><td class="px-4 py-2 text-sm truncate max-w-xs">${r.branch_name}</td><td class="px-4 py-2 text-sm text-right">${r.quantity}</td><td class="px-4 py-2 text-sm text-right font-mono">${mFmt.format(r.total_amount)}</td></tr>`;
-            }).join("");
+        function triggerQuickFilter(rng) {
+            const e = new Date(); const s = new Date();
+            if(rng==='7d') s.setDate(e.getDate()-7);
+            if(rng==='1m') s.setMonth(e.getMonth()-1);
+            if(rng==='1y') s.setFullYear(e.getFullYear()-1);
+            els.start.value = s.toISOString().split('T')[0];
+            els.end.value = e.toISOString().split('T')[0];
+            load(s, e);
         }
     </script>
 </body>
