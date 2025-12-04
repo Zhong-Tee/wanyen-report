@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Reporting Dashboard (Supabase Fixed)</title>
+    <title>Sales Reporting Dashboard (Supabase)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +14,7 @@
     <!-- PapaParse for robust CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-    <!-- Supabase JS Client -->
+    <!-- Supabase JS Client (FIXED CDN URL for Browser) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <style>
@@ -46,7 +46,7 @@
                     <div>
                         <h1 class="text-xl font-bold text-slate-900 tracking-tight">SalesPulse</h1>
                         <p class="text-[10px] text-slate-500 font-medium uppercase tracking-wide">
-                            Supabase Edition (Max 10k Rows)
+                            Supabase Edition
                         </p>
                     </div>
                 </div>
@@ -184,13 +184,16 @@
 
         <!-- 3. KPI Cards -->
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Card 1 -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200 hover:shadow-md transition-shadow animate-fade-in" style="animation-delay: 0.2s">
+            <!-- Card 1: Total Sales -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200
+                        hover:shadow-md transition-shadow animate-fade-in"
+                 style="animation-delay: 0.2s">
                 <div class="p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 bg-emerald-50 rounded-lg p-3">
                             <svg class="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
                         <div class="ml-5 w-0 flex-1">
@@ -203,13 +206,16 @@
                 </div>
             </div>
 
-            <!-- Card 2 -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200 hover:shadow-md transition-shadow animate-fade-in" style="animation-delay: 0.25s">
+            <!-- Card 2: Sheets Sold -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200
+                        hover:shadow-md transition-shadow animate-fade-in"
+                 style="animation-delay: 0.25s">
                 <div class="p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 bg-blue-50 rounded-lg p-3">
                             <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
                         </div>
                         <div class="ml-5 w-0 flex-1">
@@ -222,13 +228,16 @@
                 </div>
             </div>
 
-            <!-- Card 3 -->
-            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200 hover:shadow-md transition-shadow animate-fade-in" style="animation-delay: 0.3s">
+            <!-- Card 3: Avg Sales -->
+            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-slate-200
+                        hover:shadow-md transition-shadow animate-fade-in"
+                 style="animation-delay: 0.3s">
                 <div class="p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 bg-amber-50 rounded-lg p-3">
                             <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                             </svg>
                         </div>
                         <div class="ml-5 w-0 flex-1">
@@ -242,18 +251,26 @@
             </div>
         </section>
 
-        <!-- 4. Charts & Tables -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in" style="animation-delay: 0.35s">
+        <!-- 4. Main Chart Section (Time Series) -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in"
+                 style="animation-delay: 0.35s">
             <h2 class="text-lg font-semibold text-slate-900 mb-6">Sales Trend (Time Series)</h2>
-            <div class="relative h-80 w-full"><canvas id="salesChart"></canvas></div>
+            <div class="relative h-80 w-full">
+                <canvas id="salesChart"></canvas>
+            </div>
         </section>
 
-        <!-- 5. Weekly Analysis -->
+        <!-- 5. Weekly Analysis Section (Mon-Sun) -->
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in" style="animation-delay: 0.38s">
+            <!-- Left: Weekly Chart -->
             <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">Sales by Day of Week</h2>
-                <div class="relative h-64 w-full"><canvas id="weeklyChart"></canvas></div>
+                <div class="relative h-64 w-full">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
             </div>
+            
+            <!-- Right: Weekly Summary Table -->
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
                     <h3 class="text-lg font-semibold text-slate-900">Weekly Summary</h3>
@@ -261,21 +278,33 @@
                 <div class="overflow-y-auto flex-1">
                     <table class="min-w-full divide-y divide-slate-100">
                         <thead class="bg-white">
-                            <tr><th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">Day</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase">Sales</th></tr>
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase">Day</th>
+                                <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase">Sales</th>
+                            </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-50" id="weeklyTableBody"></tbody>
                         <tfoot class="bg-slate-50 font-semibold">
-                            <tr><td class="px-4 py-3 text-sm text-slate-900">Total</td><td class="px-4 py-3 text-sm text-slate-900 text-right" id="weeklyTotalDisplay">0.00</td></tr>
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-slate-900">Total</td>
+                                <td class="px-4 py-3 text-sm text-slate-900 text-right" id="weeklyTotalDisplay">0.00</td>
+                            </tr>
                         </tfoot>
                     </table>
                 </div>
             </div>
         </section>
 
-        <!-- 6. Rankings -->
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in" style="animation-delay: 0.4s">
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[32rem]">
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50"><h3 class="text-lg font-semibold text-slate-900">Best-Selling Products</h3></div>
+        <!-- 6. Rankings Tables -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in"
+                 style="animation-delay: 0.4s">
+            
+            <!-- Product Ranking -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden
+                        flex flex-col h-[32rem]">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h3 class="text-lg font-semibold text-slate-900">Best-Selling Products</h3>
+                </div>
                 <div class="overflow-y-auto flex-1 p-0">
                     <table class="min-w-full divide-y divide-slate-100">
                         <thead class="bg-white sticky top-0 shadow-sm z-10">
@@ -289,8 +318,13 @@
                     </table>
                 </div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[32rem]">
-                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50"><h3 class="text-lg font-semibold text-slate-900">Best-Selling Branches</h3></div>
+
+            <!-- Branch Ranking -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden
+                        flex flex-col h-[32rem]">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                    <h3 class="text-lg font-semibold text-slate-900">Best-Selling Branches</h3>
+                </div>
                 <div class="overflow-y-auto flex-1 p-0">
                     <table class="min-w-full divide-y divide-slate-100">
                         <thead class="bg-white sticky top-0 shadow-sm z-10">
@@ -306,12 +340,19 @@
             </div>
         </section>
 
-        <!-- 7. Raw Data -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in" style="animation-delay: 0.45s">
-            <div class="px-6 py-4 border-b border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('rawDataContainer').classList.toggle('hidden')">
+        <!-- 7. Raw Data Preview -->
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden
+                        animate-fade-in" style="animation-delay: 0.45s">
+            <div class="px-6 py-4 border-b border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors"
+                 onclick="document.getElementById('rawDataContainer').classList.toggle('hidden')">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-medium text-slate-900">Raw Data Inspector <span class="text-sm font-normal text-slate-500 ml-2">(Last 50 Loaded)</span></h3>
-                    <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    <h3 class="text-lg font-medium text-slate-900">
+                        Raw Data Inspector
+                        <span class="text-sm font-normal text-slate-500 ml-2">(Last 50 Loaded)</span>
+                    </h3>
+                    <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
                 </div>
             </div>
             <div id="rawDataContainer" class="hidden overflow-x-auto bg-slate-50">
@@ -332,17 +373,59 @@
 
     </main>
 
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-12 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-slate-400 text-sm">
+                © 2025 SalesPulse Dashboard (Supabase Edition)
+            </p>
+        </div>
+    </footer>
+
     <!-- App Logic -->
     <script>
+        // ============================
+        // 1. SUPABASE CONFIGURATION
+        // ============================
         const SUPABASE_URL = 'https://lgaobgxeybmlrbsjgnfh.supabase.co';
+        // FIXED: Using the correct Anon Public Key provided
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYW9iZ3hleWJtbHJic2pnbmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Nzk1OTYsImV4cCI6MjA4MDM1NTU5Nn0.rmGercp5u829OkeqzDq9R2wlR7lA3b2P4po2CZTXOZM';
+        
         const TABLE_NAME = 'sales_records';
         
         let supabase;
         const statusBadge = document.getElementById("dbStatus");
         const clearDataBtn = document.getElementById("clearDataBtn");
         const importBtn = document.getElementById("importBtn");
-        
+
+        // Initialize Supabase
+        try {
+            // NOTE: The CDN now points to the UMD build which exposes 'supabase' globally
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            
+            // Simple Connection Check
+            supabase.from(TABLE_NAME).select('count', { count: 'exact', head: true }).then(({ error }) => {
+                if (!error || error.code === 'PGRST116') { // Connected
+                    statusBadge.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-green-500 rounded-full"></span>Connected';
+                    statusBadge.classList.remove("bg-slate-100", "text-slate-600");
+                    statusBadge.classList.add("bg-green-50", "text-green-700", "border-green-200");
+                    importBtn.disabled = false;
+                    clearDataBtn.classList.remove("hidden");
+                    triggerQuickFilter("1m");
+                } else {
+                    console.error("Supabase Connection Error:", error);
+                    statusBadge.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-red-500 rounded-full"></span>Error';
+                    statusBadge.classList.add("bg-red-50", "text-red-700", "border-red-200");
+                    alert("Connection failed. Please check table name 'sales_records' exists and RLS policies are open.");
+                }
+            });
+
+        } catch (e) {
+            console.error("Init Error:", e);
+            statusBadge.innerHTML = "Config Error";
+        }
+
+        // DOM Elements
         const fileInput = document.getElementById("csvFileInput");
         const progressBar = document.getElementById("progressBar");
         const importStatusText = document.getElementById("importStatusText");
@@ -356,59 +439,62 @@
         let currentChart = null;
         let weeklyChart = null;
 
-        // Init
-        try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            supabase.from(TABLE_NAME).select('count', { count: 'exact', head: true }).then(({ error }) => {
-                if (!error || error.code === 'PGRST116') {
-                    statusBadge.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-green-500 rounded-full"></span>Connected';
-                    statusBadge.classList.replace("bg-slate-100", "bg-green-50");
-                    statusBadge.classList.replace("text-slate-600", "text-green-700");
-                    importBtn.disabled = false;
-                    clearDataBtn.classList.remove("hidden");
-                    triggerQuickFilter("1m");
-                } else {
-                    statusBadge.innerHTML = 'Error';
-                    console.error(error);
-                }
-            });
-        } catch (e) { console.error(e); }
-
-        // CSV Parser
+        // ============================
+        // 2. CSV PARSER & TRANSFORM
+        // ============================
         function parseCustomDate(dateStr) {
             if (!dateStr) return null;
             const parts = dateStr.trim().split(" ");
             const datePart = parts[0];
             const timePart = parts.length > 1 ? parts[1] : "00:00:00";
+
             if (datePart.includes("/")) {
-                const s = datePart.split("/");
-                if (s.length === 3) {
-                    let y = parseInt(s[2], 10);
-                    if (y > 2400) y -= 543;
-                    const t = timePart.split(":");
-                    return new Date(y, parseInt(s[1])-1, parseInt(s[0]), parseInt(t[0]||0), parseInt(t[1]||0), parseInt(t[2]||0));
+                const dateSegments = datePart.split("/");
+                if (dateSegments.length === 3) {
+                    let day = parseInt(dateSegments[0], 10);
+                    let month = parseInt(dateSegments[1], 10) - 1;
+                    let year = parseInt(dateSegments[2], 10);
+                    if (year > 2400) year -= 543; // BE to AD
+
+                    const timeSegments = timePart.split(":");
+                    let hours = 0, minutes = 0, seconds = 0;
+                    if (timeSegments.length >= 2) {
+                        hours = parseInt(timeSegments[0], 10);
+                        minutes = parseInt(timeSegments[1], 10);
+                        if (timeSegments.length === 3) seconds = parseInt(timeSegments[2], 10);
+                    }
+                    return new Date(year, month, day, hours, minutes, seconds);
                 }
             }
-            return new Date(dateStr);
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? null : d;
         }
 
         function transformRow(row) {
             if (row.length < 15) return null;
-            const jsDate = parseCustomDate(row[1]);
-            if (!jsDate || isNaN(jsDate.getTime())) return null;
-            
-            const qty = parseInt(row[9] || "0", 10);
-            const total = parseFloat((row[10] || "0").replace(/,/g, ""));
-            const price = qty > 0 ? total / qty : 0;
-            const d = jsDate;
-            const dateString = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,0)}-${String(d.getDate()).padStart(2,0)}`;
+            const dateTimeRaw = row[1];
+            if (!dateTimeRaw || dateTimeRaw.includes("วันที่") || dateTimeRaw.includes("Date")) return null;
 
+            const jsDate = parseCustomDate(dateTimeRaw);
+            if (!jsDate || isNaN(jsDate.getTime())) return null;
+
+            const quantity = parseInt(row[9] || "0", 10);
+            const total = parseFloat((row[10] || "0").replace(/,/g, ""));
+            const price = quantity > 0 ? total / quantity : 0;
+
+            const yyyy = jsDate.getFullYear();
+            const mm = String(jsDate.getMonth() + 1).padStart(2, "0");
+            const dd = String(jsDate.getDate()).padStart(2, "0");
+            const dateString = `${yyyy}-${mm}-${dd}`;
+            const timeString = jsDate.toTimeString().split(" ")[0];
+
+            // Mapping to Supabase (Postgres) Column Names (Snake_case usually preferred in DB)
             return {
-                timestamp: jsDate.toISOString(),
+                timestamp: jsDate.toISOString(), // Postgres expects ISO String
                 transaction_date: dateString,
-                transaction_time: jsDate.toTimeString().split(" ")[0],
+                transaction_time: timeString,
                 product: (row[3] || "Unknown").trim(),
-                quantity: qty,
+                quantity: quantity,
                 price_per_sheet: parseFloat(price.toFixed(2)),
                 total_amount: total,
                 payment_type: (row[11] || "Unknown").trim(),
@@ -416,185 +502,349 @@
             };
         }
 
-        // Import
+        // ============================
+        // 3. IMPORT HANDLER (BATCH)
+        // ============================
         importBtn.addEventListener("click", () => {
             const file = fileInput.files[0];
-            if (!file) return alert("Select CSV first");
+            if (!file) { alert("Please select a CSV file first."); return; }
+
             importProgressContainer.classList.remove("hidden");
+            importMessage.textContent = "Parsing CSV...";
             importBtn.disabled = true;
+
             Papa.parse(file, {
-                header: false, skipEmptyLines: true,
-                complete: async (res) => {
-                    const data = [];
-                    for(let row of res.data) {
-                        const rec = transformRow(row);
-                        if(rec) data.push(rec);
+                header: false,
+                skipEmptyLines: true,
+                complete: async (results) => {
+                    const parsedData = [];
+                    for (let i = 0; i < results.data.length; i++) {
+                        const record = transformRow(results.data[i]);
+                        if (record) parsedData.push(record);
                     }
-                    if(data.length===0) { importBtn.disabled=false; return alert("No valid rows"); }
-                    
-                    const batchSize = 500;
-                    for(let i=0; i<Math.ceil(data.length/batchSize); i++) {
-                        const batch = data.slice(i*batchSize, (i+1)*batchSize);
-                        await supabase.from(TABLE_NAME).insert(batch);
-                        const pct = Math.round(((i+1)/(data.length/batchSize))*100);
-                        progressBar.style.width = pct+"%";
-                        importStatusText.textContent = pct+"%";
+
+                    if (parsedData.length === 0) {
+                        importMessage.textContent = "No valid data rows found.";
+                        importMessage.className = "mt-2 text-sm text-red-600";
+                        importBtn.disabled = false;
+                        return;
                     }
-                    importMessage.textContent = "Done!";
+                    await saveToSupabase(parsedData);
+                },
+                error: (err) => {
+                    importMessage.textContent = "Error parsing CSV: " + err.message;
                     importBtn.disabled = false;
-                    triggerQuickFilter("1m");
-                    setTimeout(() => importProgressContainer.classList.add("hidden"), 3000);
                 }
             });
         });
 
-        clearDataBtn.addEventListener("click", async () => {
-            if(!confirm("Clear all data?")) return;
-            await supabase.from(TABLE_NAME).delete().neq('id', 0);
-            alert("Cleared");
-            processAndRender([], new Date(), new Date());
-        });
+        async function saveToSupabase(data) {
+            importMessage.textContent = `Uploading ${data.length} records to Supabase...`;
+            const batchSize = 500; // Supabase works well with batches
+            const totalBatches = Math.ceil(data.length / batchSize);
+            let hasError = false;
 
-        // Filter & Load
-        applyFilterBtn.addEventListener("click", () => {
-            if(startDateInput.value && endDateInput.value) {
-                loadDataByDateRange(new Date(startDateInput.value), new Date(endDateInput.value));
+            for (let i = 0; i < totalBatches; i++) {
+                const start = i * batchSize;
+                const end = start + batchSize;
+                const batch = data.slice(start, end);
+
+                const { error } = await supabase.from(TABLE_NAME).insert(batch);
+
+                if (error) {
+                    console.error("Insert Error:", error);
+                    importMessage.textContent = `Error: ${error.message}`;
+                    importMessage.className = "mt-2 text-sm text-red-600";
+                    hasError = true;
+                    break;
+                }
+
+                const pct = Math.round(((i + 1) / totalBatches) * 100);
+                progressBar.style.width = `${pct}%`;
+                importStatusText.textContent = `${pct}%`;
             }
+
+            if (!hasError) {
+                importMessage.textContent = "Upload Complete!";
+                importMessage.className = "mt-2 text-sm text-green-600 font-medium";
+                triggerQuickFilter("1m");
+                setTimeout(() => {
+                    importProgressContainer.classList.add("hidden");
+                    progressBar.style.width = "0%";
+                }, 3000);
+            }
+            importBtn.disabled = false;
+        }
+
+        // ============================
+        // 4. CLEAR DATA
+        // ============================
+        clearDataBtn.addEventListener("click", async () => {
+            if (!confirm("Delete ALL sales records from Supabase?")) return;
+            clearDataBtn.disabled = true;
+            clearDataBtn.textContent = "Clearing...";
+
+            // Delete logic: delete where id is not null (basically all)
+            const { error } = await supabase.from(TABLE_NAME).delete().neq('id', 0); // Hack to delete all
+
+            if (error) {
+                alert("Error clearing data: " + error.message);
+            } else {
+                alert("Database cleared.");
+                processAndRender([], new Date(), new Date()); // Clear UI
+            }
+            clearDataBtn.disabled = false;
+            clearDataBtn.textContent = "Clear Database";
         });
 
-        quickFilterBtns.forEach(btn => btn.addEventListener("click", (e) => {
-            triggerQuickFilter(e.target.dataset.range);
-        }));
+        // ============================
+        // 5. FETCH & FILTER
+        // ============================
+        applyFilterBtn.addEventListener("click", () => {
+            const start = startDateInput.value;
+            const end = endDateInput.value;
+            if (start && end) {
+                loadDataByDateRange(new Date(start), new Date(end));
+                updateActiveButton(null);
+            } else { alert("Please select both dates."); }
+        });
+
+        quickFilterBtns.forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+                const range = e.target.getAttribute("data-range");
+                triggerQuickFilter(range);
+                updateActiveButton(e.target);
+            });
+        });
+
+        function updateActiveButton(activeBtn) {
+            quickFilterBtns.forEach((btn) => {
+                if (btn === activeBtn) {
+                    btn.classList.remove("bg-white", "text-slate-600");
+                    btn.classList.add("bg-emerald-600", "text-white");
+                } else {
+                    btn.classList.add("bg-white", "text-slate-600");
+                    btn.classList.remove("bg-emerald-600", "text-white");
+                }
+            });
+        }
 
         function triggerQuickFilter(range) {
             const end = new Date();
             const start = new Date();
-            end.setHours(23,59,59,999);
-            
-            if(range === "7d") start.setDate(end.getDate() - 7);
-            else if(range === "1m") start.setMonth(end.getMonth() - 1);
-            else if(range === "1y") start.setFullYear(end.getFullYear() - 1);
-            start.setHours(0,0,0,0);
-            
+            end.setHours(23, 59, 59, 999);
+
+            if (range === "7d") start.setDate(end.getDate() - 7);
+            else if (range === "1m") start.setMonth(end.getMonth() - 1);
+            else if (range === "1y") start.setFullYear(end.getFullYear() - 1);
+            start.setHours(0, 0, 0, 0);
+
             startDateInput.value = start.toISOString().split('T')[0];
             endDateInput.value = end.toISOString().split('T')[0];
             loadDataByDateRange(start, end);
         }
 
-        async function loadDataByDateRange(start, end) {
-            applyFilterBtn.textContent = "Loading...";
-            applyFilterBtn.disabled = true;
+        async function loadDataByDateRange(startDate, endDate) {
             document.body.style.cursor = "wait";
-            
-            const endAdj = new Date(end);
-            endAdj.setHours(23,59,59,999);
+            applyFilterBtn.disabled = true;
+            applyFilterBtn.textContent = "Loading...";
 
-            // Fetch with Higher Limit
+            const startISO = startDate.toISOString();
+            const endAdj = new Date(endDate);
+            endAdj.setHours(23, 59, 59, 999);
+            const endISO = endAdj.toISOString();
+
+            // Supabase Query
             const { data, error } = await supabase
                 .from(TABLE_NAME)
                 .select('*')
-                .gte('timestamp', start.toISOString())
-                .lte('timestamp', endAdj.toISOString())
-                .order('timestamp', { ascending: true })
-                .limit(10000); // <--- FIXED: Increase limit from 1000 to 10000
+                .gte('timestamp', startISO)
+                .lte('timestamp', endISO)
+                .order('timestamp', { ascending: true });
 
-            if(error) alert(error.message);
-            else processAndRender(data || [], start, endAdj);
-            
-            applyFilterBtn.textContent = "Apply Filter";
-            applyFilterBtn.disabled = false;
+            if (error) {
+                console.error("Fetch Error:", error);
+                alert("Error fetching data: " + error.message);
+            } else {
+                processAndRender(data || [], startDate, endAdj);
+            }
+
             document.body.style.cursor = "default";
+            applyFilterBtn.disabled = false;
+            applyFilterBtn.textContent = "Apply Filter";
         }
 
-        function processAndRender(records, start, end) {
-            let totalSales=0, totalSheets=0;
-            const prodStats={}, branchStats={}, timeSeries={}, weekStats={0:0,1:0,2:0,3:0,4:0,5:0,6:0};
-            
-            records.forEach(rec => {
-                const sales = Number(rec.total_amount) || 0;
-                const qty = Number(rec.quantity) || 0;
-                const pName = rec.product || "Unknown";
-                const bName = rec.branch_name || "Unknown";
-                const date = new Date(rec.timestamp);
+        // ============================
+        // 6. RENDER LOGIC
+        // ============================
+        function processAndRender(records, startDate, endDate) {
+            let totalSales = 0, totalSheets = 0;
+            const productStats = {}, branchStats = {}, timeSeriesData = {};
+            const dayOfWeekStats = { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0 };
 
-                totalSales += sales;
-                totalSheets += qty;
+            const daysDiff = (endDate - startDate) / (1000 * 3600 * 24);
+            const groupByHour = daysDiff <= 7;
 
-                if(!prodStats[pName]) prodStats[pName]={sheets:0, sales:0};
-                prodStats[pName].sheets += qty;
-                prodStats[pName].sales += sales;
+            records.forEach((rec) => {
+                // Map Postgres columns (snake_case) to JS logic
+                const salesVal = Number(rec.total_amount) || 0;
+                const qtyVal = Number(rec.quantity) || 0;
+                const prodName = rec.product || "Unknown";
+                const branchName = rec.branch_name || "Unknown";
+                const dateObj = new Date(rec.timestamp);
 
-                if(!branchStats[bName]) branchStats[bName]={sheets:0, sales:0};
-                branchStats[bName].sheets += qty;
-                branchStats[bName].sales += sales;
+                totalSales += salesVal;
+                totalSheets += qtyVal;
 
-                const dayKey = date.toISOString().split('T')[0]; // Simple Daily Grouping
-                timeSeries[dayKey] = (timeSeries[dayKey] || 0) + sales;
-                weekStats[date.getDay()] += sales;
+                if (!productStats[prodName]) productStats[prodName] = { sheets: 0, sales: 0 };
+                productStats[prodName].sheets += qtyVal;
+                productStats[prodName].sales += salesVal;
+
+                if (!branchStats[branchName]) branchStats[branchName] = { sheets: 0, sales: 0 };
+                branchStats[branchName].sheets += qtyVal;
+                branchStats[branchName].sales += salesVal;
+
+                // Time Series
+                let key;
+                if (groupByHour) {
+                    const y = dateObj.getFullYear(), m = String(dateObj.getMonth()+1).padStart(2,0), d = String(dateObj.getDate()).padStart(2,0), h = String(dateObj.getHours()).padStart(2,0);
+                    key = `${y}-${m}-${d} ${h}:00`;
+                } else {
+                    const y = dateObj.getFullYear(), m = String(dateObj.getMonth()+1).padStart(2,0), d = String(dateObj.getDate()).padStart(2,0);
+                    key = `${y}-${m}-${d}`;
+                }
+                if (!timeSeriesData[key]) timeSeriesData[key] = 0;
+                timeSeriesData[key] += salesVal;
+
+                // Weekly Analysis
+                dayOfWeekStats[dateObj.getDay()] += salesVal;
             });
 
-            // Update UI
-            const moneyFmt = new Intl.NumberFormat("en-US", { style:"currency", currency:"THB" });
-            const numFmt = new Intl.NumberFormat("en-US");
-            
-            document.getElementById("kpiTotalSales").textContent = moneyFmt.format(totalSales);
-            document.getElementById("kpiTotalSheets").textContent = numFmt.format(totalSheets);
-            document.getElementById("kpiAvgSales").textContent = moneyFmt.format(totalSheets ? totalSales/totalSheets : 0);
+            const avgSales = totalSheets > 0 ? totalSales / totalSheets : 0;
+            const currencyFmt = new Intl.NumberFormat("en-US", { style: "currency", currency: "THB" });
+            const numberFmt = new Intl.NumberFormat("en-US");
 
-            renderTable("productTableBody", prodStats, moneyFmt, numFmt);
-            renderTable("branchTableBody", branchStats, moneyFmt, numFmt);
-            renderRawData(records.slice(0,50), moneyFmt);
+            document.getElementById("kpiTotalSales").textContent = currencyFmt.format(totalSales);
+            document.getElementById("kpiTotalSheets").textContent = numberFmt.format(totalSheets);
+            document.getElementById("kpiAvgSales").textContent = currencyFmt.format(avgSales);
 
-            // Chart 1: Time Series
-            if(currentChart) currentChart.destroy();
-            const sortedDates = Object.keys(timeSeries).sort();
-            currentChart = new Chart(document.getElementById("salesChart"), {
-                type: 'bar',
+            renderTable("productTableBody", productStats);
+            renderTable("branchTableBody", branchStats);
+            renderChart(timeSeriesData);
+            renderWeeklyAnalysis(dayOfWeekStats);
+            renderRawData(records.slice(0, 50));
+        }
+
+        function renderWeeklyAnalysis(dayStats) {
+            const order = [1, 2, 3, 4, 5, 6, 0];
+            const labels = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+            const shortLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            const dataValues = order.map(idx => dayStats[idx]);
+            const currencyFmt = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            const tbody = document.getElementById("weeklyTableBody");
+            tbody.innerHTML = "";
+            let total = 0;
+            order.forEach((dayIdx, i) => {
+                total += dayStats[dayIdx];
+                tbody.innerHTML += `<tr><td class="px-4 py-2 text-sm text-slate-700">${labels[i]}</td><td class="px-4 py-2 text-sm text-slate-700 text-right font-mono">${currencyFmt.format(dayStats[dayIdx])}</td></tr>`;
+            });
+            document.getElementById("weeklyTotalDisplay").textContent = currencyFmt.format(total);
+
+            const ctx = document.getElementById("weeklyChart").getContext("2d");
+            if (weeklyChart) weeklyChart.destroy();
+            weeklyChart = new Chart(ctx, {
+                type: "bar",
                 data: {
-                    labels: sortedDates,
-                    datasets: [{ label:'Sales', data: sortedDates.map(d=>timeSeries[d]), backgroundColor:'#4f46e5', borderRadius:4 }]
+                    labels: shortLabels,
+                    datasets: [{
+                        label: "Sales",
+                        data: dataValues,
+                        backgroundColor: "rgba(16, 185, 129, 0.7)",
+                        borderColor: "rgb(16, 185, 129)",
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
                 },
-                options: { maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}} }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
+                }
             });
+        }
 
-            // Chart 2: Weekly
-            if(weeklyChart) weeklyChart.destroy();
-            const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-            const dayIdx = [1,2,3,4,5,6,0];
-            const weekData = dayIdx.map(i => weekStats[i]);
-            
-            // Render Weekly Table
-            const wBody = document.getElementById("weeklyTableBody");
-            wBody.innerHTML = "";
-            dayIdx.forEach((idx, i) => {
-                wBody.innerHTML += `<tr><td class="px-4 py-2 text-sm text-slate-700">${days[i]}</td><td class="px-4 py-2 text-sm text-right font-mono">${moneyFmt.format(weekStats[idx])}</td></tr>`;
+        function renderTable(elementId, statsObj) {
+            const tbody = document.getElementById(elementId);
+            tbody.innerHTML = "";
+            const sorted = Object.entries(statsObj).map(([name, data]) => ({ name, ...data })).sort((a, b) => b.sales - a.sales);
+            const currencyFmt = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const numberFmt = new Intl.NumberFormat("en-US");
+
+            if (sorted.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-sm text-slate-500">No data available</td></tr>'; return; }
+
+            sorted.forEach((item) => {
+                const tr = document.createElement("tr");
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-slate-900">${item.name}</td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-600 text-right">${numberFmt.format(item.sheets)}</td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm text-slate-600 text-right font-mono">${currencyFmt.format(item.sales)}</td>`;
+                tbody.appendChild(tr);
             });
-            document.getElementById("weeklyTotalDisplay").textContent = moneyFmt.format(totalSales);
+        }
 
-            weeklyChart = new Chart(document.getElementById("weeklyChart"), {
-                type: 'bar',
+        function renderRawData(records) {
+            const tbody = document.getElementById("rawDataTableBody");
+            tbody.innerHTML = "";
+            const currencyFmt = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2 });
+
+            if (records.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-sm text-slate-500">No records</td></tr>'; return; }
+
+            records.forEach((rec) => {
+                const d = new Date(rec.timestamp);
+                const dateStr = `${String(d.getDate()).padStart(2,0)}/${String(d.getMonth()+1).padStart(2,0)}/${String(d.getFullYear()).slice(-2)} ${String(d.getHours()).padStart(2,0)}:${String(d.getMinutes()).padStart(2,0)}`;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-2 text-sm text-slate-900 whitespace-nowrap">${dateStr}</td>
+                        <td class="px-4 py-2 text-sm text-slate-600 truncate" title="${rec.product}">${rec.product}</td>
+                        <td class="px-4 py-2 text-sm text-slate-600 truncate" title="${rec.branch_name}">${rec.branch_name}</td>
+                        <td class="px-4 py-2 text-sm text-slate-600 text-right">${rec.quantity}</td>
+                        <td class="px-4 py-2 text-sm text-slate-600 text-right font-mono">${currencyFmt.format(rec.total_amount)}</td>
+                    </tr>`;
+            });
+        }
+
+        function renderChart(dataObj) {
+            const ctx = document.getElementById("salesChart").getContext("2d");
+            const labels = Object.keys(dataObj).sort();
+            const values = labels.map((k) => dataObj[k]);
+
+            if (currentChart) currentChart.destroy();
+            currentChart = new Chart(ctx, {
+                type: "bar",
                 data: {
-                    labels: days,
-                    datasets: [{ label:'Sales', data: weekData, backgroundColor:'#10b981', borderRadius:4 }]
+                    labels,
+                    datasets: [{
+                        label: "Total Sales",
+                        data: values,
+                        backgroundColor: "rgba(79, 70, 229, 0.7)",
+                        borderColor: "rgb(79, 70, 229)",
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
                 },
-                options: { maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}} }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { callback: (v) => v >= 1000 ? (v/1000).toFixed(0)+'k' : v } }
+                    }
+                }
             });
-        }
-
-        function renderTable(id, stats, mFmt, nFmt) {
-            const tbody = document.getElementById(id);
-            tbody.innerHTML = Object.entries(stats)
-                .sort((a,b)=>b.1.sales - a.1.sales)
-                .map(([k,v]) => `<tr class="hover:bg-slate-50"><td class="px-6 py-3 text-sm font-medium">${k}</td><td class="px-6 py-3 text-sm text-right text-slate-600">${nFmt.format(v.sheets)}</td><td class="px-6 py-3 text-sm text-right font-mono">${mFmt.format(v.sales)}</td></tr>`)
-                .join("");
-        }
-
-        function renderRawData(rows, mFmt) {
-            document.getElementById("rawDataTableBody").innerHTML = rows.map(r => {
-                const d = new Date(r.timestamp);
-                const ds = `${d.getDate()}/${d.getMonth()+1}/${String(d.getFullYear()).slice(-2)} ${String(d.getHours()).padStart(2,0)}:${String(d.getMinutes()).padStart(2,0)}`;
-                return `<tr class="hover:bg-slate-50"><td class="px-4 py-2 text-sm">${ds}</td><td class="px-4 py-2 text-sm truncate max-w-xs">${r.product}</td><td class="px-4 py-2 text-sm truncate max-w-xs">${r.branch_name}</td><td class="px-4 py-2 text-sm text-right">${r.quantity}</td><td class="px-4 py-2 text-sm text-right font-mono">${mFmt.format(r.total_amount)}</td></tr>`;
-            }).join("");
         }
     </script>
 </body>
