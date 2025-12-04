@@ -3,22 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Reporting (Match Table Schema)</title>
+    <title>SalesPulse V.8 (Final Synced)</title>
     
-    <!-- Tailwind CSS -->
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <style>
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -31,18 +27,17 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center gap-3">
                     <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
+                        <!-- Icon -->
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                     </div>
                     <div>
                         <h1 class="text-xl font-bold text-slate-900">SalesPulse</h1>
-                        <p class="text-[10px] text-slate-500 uppercase">Schema Matched Edition</p>
+                        <p class="text-[10px] text-slate-500 uppercase tracking-wider">V.8 Synced Edition</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
-                    <button id="clearDataBtn" class="text-sm text-red-600 hover:text-red-800 font-medium hidden">Clear Database</button>
-                    <span id="dbStatus" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                        <span class="w-2 h-2 mr-1.5 bg-slate-400 rounded-full"></span> Connecting...
-                    </span>
+                    <button id="clearDataBtn" class="text-xs text-red-500 hover:text-red-700 font-bold uppercase hidden">Clear All Data</button>
+                    <span id="dbStatus" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">Connecting...</span>
                 </div>
             </div>
         </div>
@@ -50,77 +45,115 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <!-- Import -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-semibold text-slate-900 mb-4">Data Import</h2>
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in">
+            <h2 class="text-lg font-semibold text-slate-900 mb-4">Step 1: Import Data</h2>
             <div class="flex flex-col md:flex-row gap-4 items-end">
                 <div class="flex-1 w-full">
-                    <label class="block text-sm font-medium text-slate-700 mb-1">CSV File</label>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Upload CSV File</label>
                     <input type="file" id="csvFileInput" accept=".csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-slate-300 rounded-lg cursor-pointer">
                 </div>
-                <button id="importBtn" class="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all" disabled>Import & Save</button>
+                <button id="importBtn" class="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-sm" disabled>
+                    Import to Database
+                </button>
             </div>
-            <div id="importProgress" class="mt-4 hidden"><div class="w-full bg-slate-100 rounded-full h-2"><div id="progressBar" class="bg-indigo-600 h-2 rounded-full" style="width:0%"></div></div><p id="importStatusText" class="text-xs text-right mt-1 text-slate-500">0%</p></div>
-            <div id="importMessage" class="mt-2 text-sm"></div>
+            <!-- Progress -->
+            <div id="importProgress" class="mt-4 hidden">
+                <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                    <div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p id="importStatusText" class="text-xs text-right mt-1 text-slate-500">0%</p>
+            </div>
+            <div id="importMessage" class="mt-2 text-sm text-slate-600 font-medium"></div>
         </section>
 
         <!-- Filters -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-semibold text-slate-900 mb-4">Filters</h2>
-            <div class="flex flex-wrap gap-4 items-end">
-                <div><label class="block text-xs font-medium text-slate-500 mb-1">Start Date</label><input type="date" id="startDate" class="border p-2 rounded-lg text-sm"></div>
-                <div><label class="block text-xs font-medium text-slate-500 mb-1">End Date</label><input type="date" id="endDate" class="border p-2 rounded-lg text-sm"></div>
-                <button id="applyFilterBtn" class="px-4 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-900">Apply</button>
-                <div class="flex gap-2 ml-auto">
-                    <button data-range="7d" class="quick-filter-btn px-3 py-1.5 border rounded-lg text-xs hover:bg-slate-50">7 Days</button>
-                    <button data-range="1m" class="quick-filter-btn px-3 py-1.5 border rounded-lg text-xs hover:bg-slate-50">1 Month</button>
-                    <button data-range="1y" class="quick-filter-btn px-3 py-1.5 border rounded-lg text-xs hover:bg-slate-50">1 Year</button>
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 animate-fade-in">
+            <div class="flex flex-wrap gap-4 items-end justify-between">
+                <div class="flex gap-4 items-end">
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase">Start Date</label><input type="date" id="startDate" class="border p-2 rounded-lg text-sm bg-slate-50 text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                    <div><label class="block text-xs font-bold text-slate-500 mb-1 uppercase">End Date</label><input type="date" id="endDate" class="border p-2 rounded-lg text-sm bg-slate-50 text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none"></div>
+                    <button id="applyFilterBtn" class="px-5 py-2 bg-slate-800 text-white text-sm font-medium rounded-lg hover:bg-slate-900 shadow-sm transition-transform active:scale-95">Apply Filter</button>
+                </div>
+                <div class="flex gap-2">
+                    <button data-range="7d" class="quick-filter-btn px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">7 Days</button>
+                    <button data-range="1m" class="quick-filter-btn px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">1 Month</button>
+                    <button data-range="1y" class="quick-filter-btn px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">1 Year</button>
                 </div>
             </div>
         </section>
 
         <!-- KPIs -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><p class="text-sm text-slate-500">Total Sales</p><p class="text-2xl font-bold text-slate-900 mt-1" id="kpiTotalSales">0.00</p></div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><p class="text-sm text-slate-500">Sheets Sold</p><p class="text-2xl font-bold text-slate-900 mt-1" id="kpiTotalSheets">0</p></div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><p class="text-sm text-slate-500">Avg Sales / Sheet</p><p class="text-2xl font-bold text-slate-900 mt-1" id="kpiAvgSales">0.00</p></div>
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                    <p class="text-sm font-semibold text-slate-500 uppercase tracking-wide">Total Sales</p>
+                </div>
+                <p class="text-3xl font-bold text-slate-900" id="kpiTotalSales">0.00</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-blue-100 text-blue-600 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg></div>
+                    <p class="text-sm font-semibold text-slate-500 uppercase tracking-wide">Sheets Sold</p>
+                </div>
+                <p class="text-3xl font-bold text-slate-900" id="kpiTotalSheets">0</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="p-2 bg-amber-100 text-amber-600 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg></div>
+                    <p class="text-sm font-semibold text-slate-500 uppercase tracking-wide">Avg / Sheet</p>
+                </div>
+                <p class="text-3xl font-bold text-slate-900" id="kpiAvgSales">0.00</p>
+            </div>
         </section>
 
         <!-- Charts -->
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
             <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 class="font-semibold mb-4">Daily Trend</h3>
+                <h3 class="font-bold text-slate-900 mb-6">Daily Sales Trend</h3>
                 <div class="h-64"><canvas id="salesChart"></canvas></div>
             </div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h3 class="font-semibold mb-4">Weekly Summary</h3>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                <h3 class="font-bold text-slate-900 mb-6">Weekly Summary</h3>
                 <div class="h-40 mb-4"><canvas id="weeklyChart"></canvas></div>
-                <div class="overflow-y-auto h-24 text-sm"><table class="w-full"><tbody id="weeklyTableBody"></tbody></table></div>
+                <div class="overflow-y-auto flex-1">
+                    <table class="w-full text-sm"><tbody id="weeklyTableBody"></tbody></table>
+                </div>
             </div>
         </section>
 
-        <!-- Tables -->
-        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Ranking Tables -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 h-96 flex flex-col">
-                <div class="p-4 border-b font-semibold bg-slate-50">Best Products</div>
-                <div class="overflow-auto p-0 flex-1"><table class="w-full text-sm text-left"><thead class="bg-white sticky top-0 shadow-sm"><tr><th class="p-3">Product</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total</th></tr></thead><tbody id="productTableBody"></tbody></table></div>
+                <div class="p-4 border-b bg-slate-50/50 font-bold text-slate-800">Top Products</div>
+                <div class="overflow-auto flex-1"><table class="w-full text-sm text-left"><thead class="bg-white sticky top-0 shadow-sm text-xs uppercase text-slate-500"><tr><th class="p-3">Product</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total</th></tr></thead><tbody id="productTableBody" class="text-slate-600"></tbody></table></div>
             </div>
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 h-96 flex flex-col">
-                <div class="p-4 border-b font-semibold bg-slate-50">Best Branches</div>
-                <div class="overflow-auto p-0 flex-1"><table class="w-full text-sm text-left"><thead class="bg-white sticky top-0 shadow-sm"><tr><th class="p-3">Branch</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total</th></tr></thead><tbody id="branchTableBody"></tbody></table></div>
+                <div class="p-4 border-b bg-slate-50/50 font-bold text-slate-800">Top Branches</div>
+                <div class="overflow-auto flex-1"><table class="w-full text-sm text-left"><thead class="bg-white sticky top-0 shadow-sm text-xs uppercase text-slate-500"><tr><th class="p-3">Branch</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total</th></tr></thead><tbody id="branchTableBody" class="text-slate-600"></tbody></table></div>
             </div>
         </section>
 
         <!-- Raw Data -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-4 bg-slate-50 cursor-pointer font-medium text-sm flex justify-between" onclick="document.getElementById('rawDataBox').classList.toggle('hidden')">
-                <span>Raw Data Inspector (Last 50)</span><span>▼</span>
+        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
+            <div class="p-4 bg-slate-50 cursor-pointer font-bold text-sm flex justify-between items-center text-slate-700 hover:bg-slate-100 transition-colors" onclick="document.getElementById('rawDataBox').classList.toggle('hidden')">
+                <span>🔍 Inspector: Last 50 Imported Rows</span>
+                <span class="text-slate-400">▼</span>
             </div>
-            <div id="rawDataBox" class="hidden overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-slate-100"><tr><th class="p-2">Date</th><th class="p-2">Product</th><th class="p-2">Branch</th><th class="p-2 text-right">Total</th></tr></thead><tbody id="rawDataTableBody"></tbody></table></div>
+            <div id="rawDataBox" class="hidden overflow-x-auto">
+                <table class="w-full text-sm text-left text-slate-600">
+                    <thead class="bg-slate-100 text-xs uppercase font-semibold text-slate-500">
+                        <tr><th class="p-3">Date</th><th class="p-3">Product</th><th class="p-3">Branch</th><th class="p-3 text-right">Qty</th><th class="p-3 text-right">Total</th></tr>
+                    </thead>
+                    <tbody id="rawDataTableBody" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
         </section>
     </main>
 
+    <!-- LOGIC -->
     <script>
-        // CONFIG
+        // CONFIG (Check Key & URL)
         const SUPABASE_URL = 'https://lgaobgxeybmlrbsjgnfh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYW9iZ3hleWJtbHJic2pnbmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Nzk1OTYsImV4cCI6MjA4MDM1NTU5Nn0.rmGercp5u829OkeqzDq9R2wlR7lA3b2P4po2CZTXOZM';
         const TABLE_NAME = 'sales_records';
@@ -144,55 +177,63 @@
         // 1. INIT
         try {
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            // Check connection
             supabase.from(TABLE_NAME).select('count', { count: 'exact', head: true }).then(({error}) => {
                 if(!error || error.code === 'PGRST116') {
                     els.status.innerHTML = '<span class="w-2 h-2 mr-1.5 bg-green-500 rounded-full"></span>Connected';
                     els.status.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200";
                     els.importBtn.disabled = false;
                     els.clearBtn.classList.remove('hidden');
-                    triggerQuickFilter('1m');
+                    // DEFAULT: Load last 1 year to ensure data is visible
+                    triggerQuickFilter('1y'); 
                 } else {
-                    els.status.innerHTML = 'Connection Failed';
+                    els.status.innerHTML = 'DB Error';
                     els.status.className = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200";
-                    console.error(error);
+                    console.error("Supabase Error:", error);
+                    alert("Error Connecting: " + error.message + "\nPlease run the SQL Script provided to reset the table.");
                 }
             });
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Init Error:", e); }
 
-        // 2. PARSE & TRANSFORM (FIXED FOR YOUR SCHEMA)
+        // 2. PARSE & TRANSFORM
         function parseDate(str) {
             if(!str) return null;
+            // Handle: 1/11/2568 10:04
             const parts = str.trim().split(" ");
             const dPart = parts[0].split("/");
             if(dPart.length === 3) {
+                let d = parseInt(dPart[0]);
+                let m = parseInt(dPart[1]) - 1; 
                 let y = parseInt(dPart[2]);
-                if(y > 2400) y -= 543;
+                if(y > 2400) y -= 543; // BE to AD
+                
                 const tPart = (parts[1]||"00:00:00").split(":");
-                return new Date(y, parseInt(dPart[1])-1, parseInt(dPart[0]), parseInt(tPart[0]||0), parseInt(tPart[1]||0), parseInt(tPart[2]||0));
+                return new Date(y, m, d, parseInt(tPart[0]||0), parseInt(tPart[1]||0), parseInt(tPart[2]||0));
             }
             return new Date(str);
         }
 
         function transform(row) {
-            if(row.length < 15) return null;
+            // Must have at least 11 columns to be valid
+            if(row.length < 11) return null; 
+            
             const dt = parseDate(row[1]);
-            if(!dt || isNaN(dt)) return null;
+            if(!dt || isNaN(dt.getTime())) return null;
 
             const qty = parseInt(row[9]||0);
-            const total = parseFloat((row[10]||"0").replace(/,/g, ""));
+            const totalStr = (row[10]||"0").toString().replace(/,/g, ""); 
+            const total = parseFloat(totalStr);
             
-            // --- CRITICAL FIX: MATCHING YOUR TABLE SCHEMA (NO UNDERSCORES) ---
+            // MAP TO SQL COLUMNS (Snake Case)
             return {
                 timestamp: dt.toISOString(),
-                transactiondate: dt.toISOString().split('T')[0], // transactiondate
-                transactiontime: dt.toTimeString().split(' ')[0], // transactiontime
+                transaction_date: dt.toISOString().split('T')[0],
+                transaction_time: dt.toTimeString().split(' ')[0],
                 product: (row[3]||"Unknown").trim(),
                 quantity: qty,
-                pricepersheet: qty ? parseFloat((total/qty).toFixed(2)) : 0, // pricepersheet
-                totalamount: total, // totalamount (MATCHED!)
-                paymenttype: (row[11]||"Unknown").trim(), // paymenttype
-                branchname: (row[14]||"Unknown").trim() // branchname
+                price_per_sheet: qty ? parseFloat((total/qty).toFixed(2)) : 0,
+                total_amount: total, // MUST MATCH SQL
+                payment_type: (row[11]||"Unknown").trim(),
+                branch_name: (row[14]||"Unknown").trim()
             };
         }
 
@@ -202,33 +243,57 @@
             if(!f) return alert("Choose CSV");
             els.progress.classList.remove('hidden');
             els.importBtn.disabled = true;
+            els.msg.textContent = "Parsing CSV...";
 
             Papa.parse(f, {
-                header: false, skipEmptyLines: true,
+                header: false, 
+                skipEmptyLines: true,
                 complete: async (res) => {
                     const rows = res.data.map(transform).filter(r => r);
-                    if(!rows.length) { els.importBtn.disabled=false; return alert("No valid rows"); }
+                    
+                    if(!rows.length) { 
+                        els.importBtn.disabled=false; 
+                        els.msg.textContent = "No valid data rows found. Check if file is correct.";
+                        return; 
+                    }
 
+                    els.msg.textContent = `Uploading ${rows.length} rows...`;
                     const batch = 500;
+                    let hasError = false;
+
                     for(let i=0; i<Math.ceil(rows.length/batch); i++) {
                         const { error } = await supabase.from(TABLE_NAME).insert(rows.slice(i*batch, (i+1)*batch));
-                        if(error) { console.error(error); els.msg.textContent = "Error: " + error.message; break; }
-                        els.bar.style.width = Math.round(((i+1)/(rows.length/batch))*100) + "%";
+                        if(error) { 
+                            console.error(error); 
+                            els.msg.textContent = "Insert Error: " + error.message; 
+                            els.msg.className = "mt-2 text-sm text-red-600 font-bold";
+                            hasError = true;
+                            break; 
+                        }
+                        const pct = Math.round(((i+1)/(rows.length/batch))*100);
+                        els.bar.style.width = pct + "%";
+                        document.getElementById('importStatusText').innerText = pct + "%";
                     }
-                    els.msg.textContent = "Upload Complete!";
+
+                    if(!hasError) {
+                        els.msg.textContent = "Success! Data Uploaded.";
+                        els.msg.className = "mt-2 text-sm text-green-600 font-bold";
+                        triggerQuickFilter('1y');
+                        setTimeout(() => els.progress.classList.add('hidden'), 3000);
+                    }
                     els.importBtn.disabled = false;
-                    triggerQuickFilter('1m');
-                    setTimeout(() => els.progress.classList.add('hidden'), 3000);
                 }
             });
         };
 
         // 4. CLEAR
         els.clearBtn.onclick = async () => {
-            if(!confirm("Clear all data?")) return;
+            if(!confirm("Are you sure you want to delete ALL data?")) return;
+            els.clearBtn.innerText = "Clearing...";
             await supabase.from(TABLE_NAME).delete().neq('id', 0);
             render([], new Date(), new Date());
-            alert("Cleared");
+            els.clearBtn.innerText = "Clear All Data";
+            alert("Database Cleared");
         };
 
         // 5. LOAD
@@ -238,18 +303,21 @@
             
             const eAdj = new Date(end); eAdj.setHours(23,59,59);
             
-            // Fixed Limit to 10,000 to ensure totals are correct
             const { data, error } = await supabase.from(TABLE_NAME)
                 .select('*')
                 .gte('timestamp', start.toISOString())
                 .lte('timestamp', eAdj.toISOString())
                 .limit(10000); 
 
-            if(error) alert(error.message);
-            else render(data || [], start, eAdj);
+            if(error) {
+                alert("Load Error: " + error.message);
+            } else {
+                console.log(`Loaded ${data.length} rows`);
+                render(data || [], start, eAdj);
+            }
             
             document.body.style.cursor = "default";
-            els.apply.textContent = "Apply";
+            els.apply.textContent = "Apply Filter";
         }
 
         // 6. RENDER
@@ -258,11 +326,10 @@
             const stats = { prod:{}, branch:{}, time:{}, week:[0,0,0,0,0,0,0] };
 
             data.forEach(r => {
-                // --- CRITICAL FIX: READING YOUR COLUMN NAMES (NO UNDERSCORES) ---
-                const val = Number(r.totalamount) || 0; // totalamount
+                const val = Number(r.total_amount) || 0; // SQL column: total_amount
                 const qty = Number(r.quantity) || 0;
-                const p = r.product || "?";
-                const b = r.branchname || "?"; // branchname
+                const p = r.product || "Unknown";
+                const b = r.branch_name || "Unknown"; // SQL column: branch_name
 
                 sum += val; count += qty;
                 
@@ -272,34 +339,36 @@
                 if(!stats.branch[b]) stats.branch[b] = {q:0, v:0};
                 stats.branch[b].q += qty; stats.branch[b].v += val;
 
-                const day = r.transactiondate; // transactiondate
+                const day = r.transaction_date; 
                 stats.time[day] = (stats.time[day]||0) + val;
                 
                 const dObj = new Date(r.timestamp);
                 stats.week[dObj.getDay()] += val;
             });
 
-            // UI
+            // Formatter
             const fmt = new Intl.NumberFormat('en-US');
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
 
+            // KPIs
             document.getElementById('kpiTotalSales').innerText = cur.format(sum);
             document.getElementById('kpiTotalSheets').innerText = fmt.format(count);
             document.getElementById('kpiAvgSales').innerText = cur.format(count ? sum/count : 0);
 
             // Tables
             const fillTable = (id, obj) => {
-                document.getElementById(id).innerHTML = Object.entries(obj)
+                const rows = Object.entries(obj)
                     .sort((a,b) => b[1].v - a[1].v)
-                    .map(([k,v]) => `<tr class="border-b hover:bg-slate-50"><td class="p-3">${k}</td><td class="p-3 text-right">${fmt.format(v.q)}</td><td class="p-3 text-right font-mono">${cur.format(v.v)}</td></tr>`)
+                    .map(([k,v]) => `<tr class="border-b hover:bg-slate-50"><td class="p-3 font-medium text-slate-700">${k}</td><td class="p-3 text-right text-slate-500">${fmt.format(v.q)}</td><td class="p-3 text-right font-mono text-slate-800">${cur.format(v.v)}</td></tr>`)
                     .join('');
+                document.getElementById(id).innerHTML = rows || '<tr><td colspan="3" class="p-4 text-center text-slate-400">No data found for this period</td></tr>';
             };
             fillTable('productTableBody', stats.prod);
             fillTable('branchTableBody', stats.branch);
 
             // Raw Data
             document.getElementById('rawDataTableBody').innerHTML = data.slice(0,50).map(r => 
-                `<tr class="border-b"><td class="p-2">${r.transactiondate}</td><td class="p-2">${r.product}</td><td class="p-2">${r.branchname}</td><td class="p-2 text-right">${cur.format(r.totalamount)}</td></tr>`
+                `<tr class="border-b hover:bg-slate-50"><td class="p-3 whitespace-nowrap">${r.transaction_date} ${r.transaction_time || ''}</td><td class="p-3 truncate max-w-[150px]" title="${r.product}">${r.product}</td><td class="p-3 truncate max-w-[150px]" title="${r.branch_name}">${r.branch_name}</td><td class="p-3 text-right">${r.quantity}</td><td class="p-3 text-right font-mono">${cur.format(r.total_amount)}</td></tr>`
             ).join('');
 
             // Charts
@@ -307,7 +376,6 @@
             drawChart('salesChart', 'bar', days, days.map(d=>stats.time[d]), '#4f46e5');
             
             const wDays = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-            // Adjust to Mon-Sun
             const rotWeek = [...stats.week.slice(1), stats.week[0]];
             const rotLabels = [...wDays.slice(1), wDays[0]];
             
@@ -315,15 +383,16 @@
             
             // Weekly Table
             document.getElementById('weeklyTableBody').innerHTML = rotLabels.map((d,i) => 
-                `<tr><td class="py-1">${d}</td><td class="text-right font-mono">${cur.format(rotWeek[i])}</td></tr>`
+                `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-2 text-slate-600">${d}</td><td class="text-right font-mono text-slate-800">${cur.format(rotWeek[i])}</td></tr>`
             ).join('');
         }
 
         function drawChart(id, type, labels, data, color) {
             if(charts[id]) charts[id].destroy();
-            charts[id] = new Chart(document.getElementById(id), {
-                type, data: { labels, datasets: [{ data, backgroundColor: color, borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { x: {grid:{display:false}} } }
+            const ctx = document.getElementById(id).getContext('2d');
+            charts[id] = new Chart(ctx, {
+                type, data: { labels, datasets: [{ data, backgroundColor: color, borderRadius: 4, barPercentage: 0.6 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false} }, scales: { x: {grid:{display:false}}, y: {beginAtZero: true, grid:{borderDash:[2,2]}} } }
             });
         }
 
@@ -333,9 +402,21 @@
 
         function triggerQuickFilter(rng) {
             const e = new Date(); const s = new Date();
+            // Highlight Button
+            document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+                if(btn.dataset.range === rng) {
+                    btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+                    btn.classList.remove('text-slate-600', 'hover:bg-slate-50', 'border-slate-200');
+                } else {
+                    btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600');
+                    btn.classList.add('text-slate-600', 'hover:bg-slate-50', 'border-slate-200');
+                }
+            });
+
             if(rng==='7d') s.setDate(e.getDate()-7);
             if(rng==='1m') s.setMonth(e.getMonth()-1);
             if(rng==='1y') s.setFullYear(e.getFullYear()-1);
+            
             els.start.value = s.toISOString().split('T')[0];
             els.end.value = e.toISOString().split('T')[0];
             load(s, e);
