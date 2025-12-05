@@ -116,21 +116,59 @@
             <div id="costContainer" class="grid grid-cols-1 xl:grid-cols-3 gap-8"></div>
         </div>
 
-        <!-- 4. COMPARE (FIXED) -->
+        <!-- 4. COMPARE (REVISED) -->
         <div id="view-compare" class="hidden fade-in space-y-8">
             <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">Sales Comparison</h2>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-200"><h4 class="font-bold text-blue-800 mb-4">Period A</h4><div class="flex gap-2 mb-6"><input type="date" id="compStartA" class="border p-2 w-full text-sm rounded"><input type="date" id="compEndA" class="border p-2 w-full text-sm rounded"></div><p class="text-3xl font-black text-slate-800" id="compValA">0.00</p><p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyA" class="font-bold">0</span></p></div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200"><h4 class="font-bold text-orange-800 mb-4">Period B</h4><div class="flex gap-2 mb-6"><input type="date" id="compStartB" class="border p-2 w-full text-sm rounded"><input type="date" id="compEndB" class="border p-2 w-full text-sm rounded"></div><p class="text-3xl font-black text-slate-800" id="compValB">0.00</p><p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyB" class="font-bold">0</span></p></div>
+                <!-- Period A -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-blue-800">Period A</h4>
+                        <input type="month" class="text-xs border p-1 rounded" onchange="setCompMonth('A', this.value)" placeholder="Select Month">
+                    </div>
+                    <div class="flex gap-2 mb-6">
+                        <input type="date" id="compStartA" class="border p-2 w-full text-sm rounded">
+                        <input type="date" id="compEndA" class="border p-2 w-full text-sm rounded">
+                    </div>
+                    <p class="text-3xl font-black text-slate-800" id="compValA">0.00</p>
+                    <p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyA" class="font-bold">0</span></p>
+                </div>
+                
+                <!-- Period B -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200">
+                     <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-orange-800">Period B</h4>
+                        <input type="month" class="text-xs border p-1 rounded" onchange="setCompMonth('B', this.value)" placeholder="Select Month">
+                    </div>
+                    <div class="flex gap-2 mb-6">
+                        <input type="date" id="compStartB" class="border p-2 w-full text-sm rounded">
+                        <input type="date" id="compEndB" class="border p-2 w-full text-sm rounded">
+                    </div>
+                    <p class="text-3xl font-black text-slate-800" id="compValB">0.00</p>
+                    <p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyB" class="font-bold">0</span></p>
+                </div>
             </div>
-            <div class="flex justify-center pt-4"><button onclick="runCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 font-bold">Run Comparison</button></div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><h4 class="font-bold text-slate-700 mb-4">Sales Comparison</h4><div class="h-80"><canvas id="compareSalesChart"></canvas></div></div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><h4 class="font-bold text-slate-700 mb-4">Quantity Comparison</h4><div class="h-80"><canvas id="compareQtyChart"></canvas></div></div>
+
+            <div class="flex justify-center pt-4">
+                <button onclick="runCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 font-bold">Run Comparison</button>
+            </div>
+
+            <div class="space-y-6 mt-6">
+                <!-- Line Chart Sales -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h4 class="font-bold text-slate-700 mb-4">Daily Sales Comparison (Line)</h4>
+                    <div class="h-96"><canvas id="compareSalesChart"></canvas></div>
+                </div>
+                <!-- Line Chart Qty -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h4 class="font-bold text-slate-700 mb-4">Daily Quantity Comparison (Line)</h4>
+                    <div class="h-96"><canvas id="compareQtyChart"></canvas></div>
+                </div>
             </div>
         </div>
 
-        <!-- 5. P&L (UPDATED QTY COL) -->
+        <!-- 5. P&L (UPDATED GP COL) -->
         <div id="view-pnl" class="hidden fade-in space-y-8">
             <div class="flex justify-between items-end border-b border-slate-100 pb-6">
                 <div><h2 class="text-3xl font-bold text-slate-900">Profit & Loss</h2><p class="text-sm text-slate-500">Calculate net profit by branch.</p></div>
@@ -305,7 +343,7 @@
         window.filterDashByYear = (y) => { if(!y) return; setDash(`${y}-01-01`, `${y}-12-31`); };
         function setDash(s,e) { document.getElementById('dashStart').value=s; document.getElementById('dashEnd').value=e; fetchDataAndRender(); }
 
-        // --- BRANCH VIEW (FIXED) ---
+        // --- BRANCH VIEW (FIXED BADGE) ---
         function renderBranchView() {
             const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
             const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e);
@@ -327,7 +365,8 @@
                 const topProd = Object.entries(prodStats).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v],i)=>`<tr class="border-b border-${color}-50 text-xs"><td class="py-1 text-slate-500 w-4">${i+1}</td><td class="py-1 truncate max-w-[80px]" title="${k}">${k}</td><td class="py-1 text-right">${cur.format(v)}</td></tr>`).join('');
                 const topBr = Object.entries(branchStats).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v],i)=>`<tr class="border-b border-${color}-50 text-xs"><td class="py-1 text-slate-500 w-4">${i+1}</td><td class="py-1 truncate max-w-[80px]" title="${k}">${k}</td><td class="py-1 text-right">${cur.format(v)}</td></tr>`).join('');
 
-                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full"><div class="bg-${color}-50 px-5 py-3 border-b border-${color}-100 flex justify-between items-center"><h3 class="font-bold text-${color}-700 text-lg">${grp}</h3><span class="text-xs bg-white px-2 py-1 rounded font-bold border border-${color}-200 text-${color}-600">${branches.size} Br</span></div><div class="p-4 flex-1 space-y-4"><div class="grid grid-cols-2 gap-2 text-center"><div><p class="text-[10px] text-slate-400 font-bold">SALES</p><p class="font-bold text-slate-800">${cur.format(sum)}</p></div><div><p class="text-[10px] text-slate-400 font-bold">QTY</p><p class="font-bold text-slate-800">${num.format(qty)}</p></div></div><div class="grid grid-cols-2 gap-2"><div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP PRODUCTS</p><table class="w-full">${topProd}</table></div><div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP BRANCHES</p><table class="w-full">${topBr}</table></div></div></div><div class="p-3 border-t border-slate-100 bg-slate-50/50"><button onclick="openGroupModal('${grp}')" class="w-full py-2 bg-white border border-${color}-200 text-${color}-700 text-xs font-bold rounded hover:bg-${color}-50">View All Data</button></div></div>`;
+                // FIXED: Changed "Br" to "Branch"
+                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full"><div class="bg-${color}-50 px-5 py-3 border-b border-${color}-100 flex justify-between items-center"><h3 class="font-bold text-${color}-700 text-lg">${grp}</h3><span class="text-xs bg-white px-2 py-1 rounded font-bold border border-${color}-200 text-${color}-600">${branches.size} Branch</span></div><div class="p-4 flex-1 space-y-4"><div class="grid grid-cols-2 gap-2 text-center"><div><p class="text-[10px] text-slate-400 font-bold">SALES</p><p class="font-bold text-slate-800">${cur.format(sum)}</p></div><div><p class="text-[10px] text-slate-400 font-bold">QTY</p><p class="font-bold text-slate-800">${num.format(qty)}</p></div></div><div class="grid grid-cols-2 gap-2"><div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP PRODUCTS</p><table class="w-full">${topProd}</table></div><div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP BRANCHES</p><table class="w-full">${topBr}</table></div></div></div><div class="p-3 border-t border-slate-100 bg-slate-50/50"><button onclick="openGroupModal('${grp}')" class="w-full py-2 bg-white border border-${color}-200 text-${color}-700 text-xs font-bold rounded hover:bg-${color}-50">View All Data</button></div></div>`;
             });
         }
 
@@ -336,6 +375,7 @@
             if(!error) { BRANCH_COSTS_CACHE = {}; data.forEach(c => BRANCH_COSTS_CACHE[c.branch_name] = {rent: c.rent, gp: c.gp_percent}); }
         }
 
+        // --- COST SETTINGS (FIXED HEIGHT) ---
         function renderCostSettings() {
             const branches = new Set(); GLOBAL_DATA.forEach(r => branches.add(r.branch_name || "Unknown"));
             const container = document.getElementById('costContainer'); container.innerHTML = '';
@@ -344,40 +384,122 @@
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange'); let rows = '';
                 groups[grp].forEach(br => { const s = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0}; rows += `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-4 text-xs font-medium truncate max-w-[150px]" title="${br}">${br}</td><td class="py-2 px-2 text-right"><input type="number" value="${s.rent}" class="border rounded w-20 text-right text-xs p-1" onchange="saveCostCloud('${br}', 'rent', this.value)"></td><td class="py-2 px-2 text-right"><input type="number" value="${s.gp}" class="border rounded w-14 text-right text-xs p-1" onchange="saveCostCloud('${br}', 'gp', this.value)"></td><td class="py-2 px-2 text-center"><button onclick="deleteCostCloud('${br}')" class="text-red-400 hover:text-red-600">×</button></td></tr>`; });
-                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 overflow-hidden"><div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm">${grp}</div><div class="max-h-96 overflow-y-auto"><table class="w-full"><thead class="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th class="text-left px-4 py-2">Branch</th><th class="px-2 text-right">Rent</th><th class="px-2 text-right">%GP</th><th class="px-2"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+                // FIXED: Changed max-h-96 to dynamic calc height
+                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 overflow-hidden"><div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm">${grp}</div><div class="h-[calc(100vh-240px)] overflow-y-auto"><table class="w-full"><thead class="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th class="text-left px-4 py-2">Branch</th><th class="px-2 text-right">Rent</th><th class="px-2 text-right">%GP</th><th class="px-2"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
             });
         }
         
         window.saveCostCloud = async (br, type, val) => { const current = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0}; if(type === 'rent') current.rent = Number(val); if(type === 'gp') current.gp = Number(val); BRANCH_COSTS_CACHE[br] = current; await supabase.from(COST_TABLE).upsert({ branch_name: br, rent: current.rent, gp_percent: current.gp }, { onConflict: 'branch_name' }); };
         window.deleteCostCloud = async (br) => { if(!confirm("Reset?")) return; delete BRANCH_COSTS_CACHE[br]; renderCostSettings(); await supabase.from(COST_TABLE).delete().eq('branch_name', br); };
 
-        // --- COMPARE (FIXED) ---
+        // --- COMPARE (REVAMPED TO LINE CHART + DROPDOWN) ---
+        window.setCompMonth = (period, val) => {
+            if(!val) return;
+            const [y, m] = val.split('-');
+            const lastDay = new Date(y, m, 0).getDate();
+            const start = `${y}-${m}-01`;
+            const end = `${y}-${m}-${lastDay}`;
+            document.getElementById(`compStart${period}`).value = start;
+            document.getElementById(`compEnd${period}`).value = end;
+        };
+
         window.runCompare = async () => {
             const sA = document.getElementById('compStartA').value; const eA = document.getElementById('compEndA').value;
             const sB = document.getElementById('compStartB').value; const eB = document.getElementById('compEndB').value;
             if(!sA || !eA || !sB || !eB) return alert("Select dates");
-            const dA = await fetchData(sA, eA); const dB = await fetchData(sB, eB);
-            const calc = d => d.reduce((a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}), {s:0,q:0});
-            const rA = calc(dA); const rB = calc(dB);
-            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'}); const num = new Intl.NumberFormat('en-US');
-            document.getElementById('compValA').innerText = cur.format(rA.s); document.getElementById('compQtyA').innerText = num.format(rA.q);
-            document.getElementById('compValB').innerText = cur.format(rB.s); document.getElementById('compQtyB').innerText = num.format(rB.q);
+
+            const dA = await fetchData(sA, eA);
+            const dB = await fetchData(sB, eB);
+
+            const calcTotal = d => d.reduce((a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}), {s:0,q:0});
+            const rA = calcTotal(dA); 
+            const rB = calcTotal(dB);
+
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'}); 
+            const num = new Intl.NumberFormat('en-US');
+
+            document.getElementById('compValA').innerText = cur.format(rA.s); 
+            document.getElementById('compQtyA').innerText = num.format(rA.q);
+            document.getElementById('compValB').innerText = cur.format(rB.s); 
+            document.getElementById('compQtyB').innerText = num.format(rB.q);
             
+            // --- DAILY DATA LOGIC FOR LINE CHART ---
+            // Map data to Day of Month (1...31)
+            const mapDaily = (data) => {
+                const map = {};
+                data.forEach(r => {
+                    const day = parseInt(r.transaction_date.split('-')[2]); // Get Day part
+                    if (!map[day]) map[day] = {s:0, q:0};
+                    map[day].s += Number(r.total_amount);
+                    map[day].q += Number(r.quantity);
+                });
+                return map;
+            };
+
+            const mapA = mapDaily(dA);
+            const mapB = mapDaily(dB);
+
+            const allDays = new Set([...Object.keys(mapA), ...Object.keys(mapB)]);
+            const labels = Array.from(allDays).sort((a,b)=>a-b).map(d => `Day ${d}`);
+            const dataSA = labels.map((_, i) => mapA[i+1]?.s || 0);
+            const dataSB = labels.map((_, i) => mapB[i+1]?.s || 0);
+            const dataQA = labels.map((_, i) => mapA[i+1]?.q || 0);
+            const dataQB = labels.map((_, i) => mapB[i+1]?.q || 0);
+
             if(charts.compSales) charts.compSales.destroy();
             if(charts.compQty) charts.compQty.destroy();
 
-            // FIXED: CENTERED DATA LABELS
-            const opts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { anchor: 'center', align: 'center', color: '#ffffff', font: { weight: 'bold' } } } };
+            // CHART CONFIG - LINE CHART
+            const lineOpts = (type) => ({ 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                interaction: { mode: 'index', intersect: false },
+                plugins: { 
+                    legend: { position: 'top' }, 
+                    datalabels: { 
+                        display: true,
+                        align: 'end',
+                        anchor: 'end',
+                        color: (ctx) => ctx.datasetIndex === 0 ? '#3b82f6' : '#f97316',
+                        font: { size: 10, weight: 'bold' },
+                        formatter: (val) => {
+                            if (val === 0) return '';
+                            if (type === 'sales') return new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits:0}).format(val);
+                            return new Intl.NumberFormat('en-US').format(val) + ' Sheets';
+                        }
+                    } 
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            });
             
             charts.compSales = new Chart(document.getElementById('compareSalesChart').getContext('2d'), {
-                type: 'bar', data: { labels: ['Period A', 'Period B'], datasets: [{ data: [rA.s, rB.s], backgroundColor: ['#3b82f6', '#f97316'], borderRadius: 6 }] }, options: opts
+                type: 'line', 
+                data: { 
+                    labels: labels, 
+                    datasets: [
+                        { label: 'Period A', data: dataSA, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3 },
+                        { label: 'Period B', data: dataSB, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 }
+                    ] 
+                }, 
+                options: lineOpts('sales')
             });
+
             charts.compQty = new Chart(document.getElementById('compareQtyChart').getContext('2d'), {
-                type: 'bar', data: { labels: ['Period A', 'Period B'], datasets: [{ data: [rA.q, rB.q], backgroundColor: ['#60a5fa', '#fdba74'], borderRadius: 6 }] }, options: opts
+                type: 'line', 
+                data: { 
+                    labels: labels, 
+                    datasets: [
+                        { label: 'Period A', data: dataQA, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3 },
+                        { label: 'Period B', data: dataQB, borderColor: '#fdba74', backgroundColor: '#fdba74', tension: 0.3 }
+                    ] 
+                }, 
+                options: lineOpts('qty')
             });
         };
 
-        // --- P&L (FIXED QTY COL) ---
+        // --- P&L (UPDATED GP DEDUCTION DISPLAY) ---
         async function loadPnLMonth() {
             const m = document.getElementById('pnlMonth').value; if(!m) return;
             const [y, mo] = m.split('-'); const data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
@@ -399,10 +521,12 @@
                 let rows = ''; let total = 0;
                 Object.entries(report[grp]).forEach(([br, d]) => {
                     total += d.s; const setting = costs[br] || {rent:0, gp:0};
-                    const profit = d.s - setting.rent - (d.s * (setting.gp / 100));
-                    rows += `<tr class="border-b hover:bg-slate-50 text-sm"><td class="py-2 px-4">${br}</td><td class="text-right font-mono">${cur.format(d.s)}</td><td class="text-right font-mono text-blue-600">${num.format(d.q)}</td><td class="text-right text-slate-500">${cur.format(setting.rent)}</td><td class="text-right text-slate-500">${setting.gp}%</td><td class="text-right font-bold font-mono ${profit>=0?'text-emerald-600':'text-red-600'}">${cur.format(profit)}</td></tr>`;
+                    const gpDed = d.s * (setting.gp / 100);
+                    const profit = d.s - setting.rent - gpDed;
+                    // FIXED: Added GP Deduction value display
+                    rows += `<tr class="border-b hover:bg-slate-50 text-sm"><td class="py-2 px-4">${br}</td><td class="text-right font-mono">${cur.format(d.s)}</td><td class="text-right font-mono text-blue-600">${num.format(d.q)}</td><td class="text-right text-slate-500">${cur.format(setting.rent)}</td><td class="text-right text-slate-500">${setting.gp}% <span class="text-xs text-red-500 ml-1">(-${cur.format(gpDed)})</span></td><td class="text-right font-bold font-mono ${profit>=0?'text-emerald-600':'text-red-600'}">${cur.format(profit)}</td></tr>`;
                 });
-                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 mb-6 overflow-hidden"><div class="bg-${color}-50 px-6 py-3 font-bold text-${color}-800"><span>${grp} Group</span></div><table class="w-full"><thead><tr class="text-xs bg-slate-50 text-slate-500"><th class="text-left px-4 py-2">Branch</th><th class="text-right px-4">Sales</th><th class="text-right px-4">Qty</th><th class="text-right px-4">Rent</th><th class="text-right px-4">GP%</th><th class="text-right px-4">Net</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 mb-6 overflow-hidden"><div class="bg-${color}-50 px-6 py-3 font-bold text-${color}-800"><span>${grp} Group</span></div><table class="w-full"><thead><tr class="text-xs bg-slate-50 text-slate-500"><th class="text-left px-4 py-2">Branch</th><th class="text-right px-4">Sales</th><th class="text-right px-4">Qty</th><th class="text-right px-4">Rent</th><th class="text-right px-4">GP% (Deduction)</th><th class="text-right px-4">Net</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             });
         }
 
@@ -444,10 +568,20 @@
 
         window.toggleRankingModal = () => { const m=document.getElementById('rankingModal'); m.classList.toggle('opacity-0'); m.classList.toggle('pointer-events-none'); document.body.classList.toggle('modal-active'); };
         window.closeModal = () => toggleRankingModal();
-        window.switchTab = (t) => { ['dashboard', 'compare', 'pnl', 'branch', 'cost'].forEach(x => document.getElementById(`view-${x}`).classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); if(t==='pnl') loadPnLMonth(); if(t==='cost') renderCostSettings(); if(t==='branch') renderBranchView(); };
+        // FIXED: SwitchTab Logic to handle Active Class
+        window.switchTab = (t) => { 
+            ['dashboard', 'compare', 'pnl', 'branch', 'cost'].forEach(x => {
+                document.getElementById(`view-${x}`).classList.add('hidden');
+                document.getElementById(`nav-${x}`).classList.remove('active');
+            }); 
+            document.getElementById(`view-${t}`).classList.remove('hidden'); 
+            document.getElementById(`nav-${t}`).classList.add('active');
+            if(t==='pnl') loadPnLMonth(); 
+            if(t==='cost') renderCostSettings(); 
+            if(t==='branch') renderBranchView(); 
+        };
         function fillModalTable(id, obj, cur) { const html = Object.entries(obj).sort((a,b) => b[1]-a[1]).map(([k,v], i) => `<tr class="hover:bg-slate-50"><td class="p-2 text-slate-400">${i+1}</td><td class="p-2 truncate max-w-[200px]" title="${k}">${k}</td><td class="p-2 text-right font-mono">${cur.format(v)}</td></tr>`).join(''); document.getElementById(id).innerHTML = html; }
         
-        // Import & Delete logic same as before (omitted for brevity)
         function setupEventListeners() {
              document.getElementById('globalImportBtn').onclick=()=>document.getElementById('globalCsvInput').click();
              document.getElementById('globalCsvInput').onchange=async(e)=>{ const files=e.target.files; if(!files.length) return; showLoading(true); for(let i=0;i<files.length;i++){ const f=files[i]; const {data:exists}=await supabase.from(LOG_TABLE).select('*').eq('filename',f.name).single(); if(exists){alert("File exists!");continue;} await new Promise(r=>Papa.parse(f,{header:false,skipEmptyLines:true,complete:async(res)=>{ const rows=res.data.map(transform).filter(x=>x); const batch=500; for(let j=0;j<Math.ceil(rows.length/batch);j++) await supabase.from(TABLE).insert(rows.slice(j*batch,(j+1)*batch)); await supabase.from(LOG_TABLE).insert({filename:f.name, total_rows:rows.length}); r(); }})); } showLoading(false); alert("Done"); fetchDataAndRender(); };
