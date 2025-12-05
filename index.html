@@ -105,7 +105,8 @@
         <div id="view-branch" class="hidden fade-in space-y-8">
              <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div><h2 class="text-3xl font-bold text-slate-900 tracking-tight">Branch Group Analysis</h2><p class="text-sm text-slate-500 mt-1">Performance overview & detailed rankings.</p></div>
-                <div class="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm"><input type="date" id="branchStart" class="text-sm border p-1.5 rounded"><span class="text-slate-400">-</span><input type="date" id="branchEnd" class="text-sm border p-1.5 rounded"><button onclick="renderBranchView()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-indigo-700">Update</button></div>
+                <!-- EDIT 1: Changed onclick to fetchBranchData() -->
+                <div class="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm"><input type="date" id="branchStart" class="text-sm border p-1.5 rounded"><span class="text-slate-400">-</span><input type="date" id="branchEnd" class="text-sm border p-1.5 rounded"><button onclick="fetchBranchData()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-indigo-700">Update</button></div>
             </div>
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="branchCardsContainerFull"></div>
         </div>
@@ -266,6 +267,21 @@
             renderDashboard();
             renderCostSettings();
         }
+
+        // EDIT 2: Added function to fetch new data specifically for Branch Analysis
+        window.fetchBranchData = async () => {
+            const s = document.getElementById('branchStart').value;
+            const e = document.getElementById('branchEnd').value;
+            if(!s || !e) return alert("Select dates");
+            GLOBAL_DATA = await fetchData(s, e);
+            document.getElementById('dashStart').value = s;
+            document.getElementById('dashEnd').value = e;
+            document.getElementById('currentRangeText').innerText = `${s} to ${e}`;
+            document.getElementById('recordCountDisplay').innerText = `${GLOBAL_DATA.length} rows`;
+            renderDashboard();
+            renderBranchView();
+            renderCostSettings();
+        };
 
         function renderDashboard() {
             let sum=0, qty=0;
@@ -528,11 +544,12 @@
                     const gpDed = d.s * (setting.gp / 100);
                     const profit = d.s - setting.rent - gpDed;
 
-                    // CONDITIONAL DISPLAY FOR RENT & GP DEDUCTION
-                    const rentDedDisplay = setting.rent > 0 ? ` <span class="text-xs text-red-500 ml-1">(-${cur.format(setting.rent)})</span>` : '';
+                    // EDIT 3: Rent formula changed to (Sales - Rent) and color to slate-500
+                    const rentDedDisplay = setting.rent > 0 ? ` <span class="text-xs text-slate-500 ml-1">(${cur.format(d.s - setting.rent)})</span>` : '';
                     const gpDedDisplay = gpDed > 0 ? ` <span class="text-xs text-red-500 ml-1">(-${cur.format(gpDed)})</span>` : '';
 
-                    rows += `<tr class="border-b hover:bg-slate-50 text-sm"><td class="py-2 px-4">${br}</td><td class="text-right font-mono">${cur.format(d.s)}</td><td class="text-right font-mono text-blue-600">${num.format(d.q)}</td><td class="text-right text-slate-500">${cur.format(setting.rent)}${rentDedDisplay}</td><td class="text-right text-slate-500">${setting.gp}%${gpDedDisplay}</td><td class="text-right font-bold font-mono ${profit>=0?'text-emerald-600':'text-red-600'}">${cur.format(profit)}</td></tr>`;
+                    // EDIT 4: Added px-4 to the Net profit column
+                    rows += `<tr class="border-b hover:bg-slate-50 text-sm"><td class="py-2 px-4">${br}</td><td class="text-right font-mono">${cur.format(d.s)}</td><td class="text-right font-mono text-blue-600">${num.format(d.q)}</td><td class="text-right text-slate-500">${cur.format(setting.rent)}${rentDedDisplay}</td><td class="text-right text-slate-500">${setting.gp}%${gpDedDisplay}</td><td class="text-right font-bold font-mono ${profit>=0?'text-emerald-600':'text-red-600'} px-4">${cur.format(profit)}</td></tr>`;
                 });
                 container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 mb-6 overflow-hidden"><div class="bg-${color}-50 px-6 py-3 font-bold text-${color}-800"><span>${grp} Group</span></div><table class="w-full"><thead><tr class="text-xs bg-slate-50 text-slate-500"><th class="text-left px-4 py-2">Branch</th><th class="text-right px-4">Sales</th><th class="text-right px-4">Qty</th><th class="text-right px-4">Rent</th><th class="text-right px-4">GP% (Deduction)</th><th class="text-right px-4">Net</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             });
