@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.33 (Service Plan Added)</title>
+    <title>SalesPulse V.34 (Service Plan Fixed)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -143,7 +143,7 @@
             <div id="pnlContainer" class="space-y-8 pb-12"></div>
         </div>
 
-        <!-- 6. SERVICE PLANNING (NEW) -->
+        <!-- 6. SERVICE PLANNING -->
         <div id="view-planning" class="hidden fade-in space-y-8">
             <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div>
@@ -179,7 +179,10 @@
         const TABLE = 'sales_records';
         const LOG_TABLE = 'upload_logs';
         const COST_TABLE = 'branch_costs';
-        const STOCK_SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1Gr_T63Gbxqf-tFhCa7wM0s2PP0V_APGMdxKJiOBIvwc/export?format=csv&gid=1888649299';
+        
+        // --- PROXY URL APPLIED HERE ---
+        const STOCK_SHEET_CSV = 'https://corsproxy.io/?' + encodeURIComponent('https://docs.google.com/spreadsheets/d/1Gr_T63Gbxqf-tFhCa7wM0s2PP0V_APGMdxKJiOBIvwc/export?format=csv&gid=1888649299');
+
         const MAX_FETCH = 300000; 
 
         let supabase, GLOBAL_DATA = [], charts = {};
@@ -617,7 +620,9 @@
                 },
                 error: function(err) {
                     showLoading(false);
-                    alert("Failed to load Google Sheet: " + err.message);
+                    // Log error to console but alert user
+                    console.error("CSV Fetch Error:", err);
+                    alert("Failed to load Google Sheet. Please check console (F12) for CORS errors.");
                 }
             });
         }
@@ -631,23 +636,23 @@
 
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                const grpBranches = Array.from(branches).filter(b => getGroup(b) === grp).sort();
+                const grpBranches = Array.from(branches).filter(b => getGroup(b) === grp).sort((a,b) => {
+                     const valA = parseInt(a.match(/^\d+/)?.[0] || "0");
+                     const valB = parseInt(b.match(/^\d+/)?.[0] || "0");
+                     return valA - valB;
+                });
                 
                 if (grpBranches.length === 0) return;
 
                 let rows = '';
                 grpBranches.forEach(br => {
-                    // Match normalized names if possible, for now exact match
                     const stock = stockData[br] || { INK: 0, PAPER: 0 };
                     const sales = runRates[br] || { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
 
-                    // Calculate rates
                     const calc = (type) => {
                         const s = sales[type];
                         const avgWD = s.wd / daysWD;
                         const avgWE = s.we / daysWE;
-                        // Weighted average for "Days Remaining" prediction
-                        // (AvgWD * 5 + AvgWE * 2) / 7
                         const weightedAvg = ((avgWD * 5) + (avgWE * 2)) / 7;
                         const currentStock = stock[type];
                         const daysLeft = weightedAvg > 0 ? (currentStock / weightedAvg) : 999;
@@ -726,7 +731,6 @@
             if(t==='pnl') loadPnLMonth(); 
             if(t==='cost') renderCostSettings(); 
             if(t==='branch') renderBranchView();
-            // planning is loaded manually via button to save resources or can be auto loaded here
         };
         function fillModalTable(id, obj, cur) { const html = Object.entries(obj).sort((a,b) => b[1]-a[1]).map(([k,v], i) => `<tr class="hover:bg-slate-50"><td class="p-2 text-slate-400">${i+1}</td><td class="p-2 truncate max-w-[200px]" title="${k}">${k}</td><td class="p-2 text-right font-mono">${cur.format(v)}</td></tr>`).join(''); document.getElementById(id).innerHTML = html; }
         
