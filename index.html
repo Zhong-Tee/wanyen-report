@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.19 (Command Center)</title>
+    <title>SalesPulse V.22 (On-Demand Load)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,25 +17,25 @@
         .nav-item.active { background-color: #e0e7ff; color: #4338ca; border-right: 3px solid #4338ca; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        /* Modal */
         .modal { transition: opacity 0.25s ease; }
         body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
+        #loadingOverlay { backdrop-filter: blur(2px); background: rgba(255,255,255,0.8); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex overflow-hidden">
 
-    <!-- 1. SIDEBAR -->
-    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20">
-        <div class="h-16 flex items-center px-6 border-b border-slate-100">
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-lg">
+        <div class="h-16 flex items-center px-6 border-b border-slate-100 bg-slate-50">
             <div class="bg-indigo-600 text-white p-1.5 rounded mr-3">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
-            <span class="font-bold text-lg text-slate-800">SalesPulse</span>
+            <span class="font-bold text-lg text-slate-800 tracking-tight">SalesPulse</span>
         </div>
 
-        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors active">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
                 Dashboard
             </button>
             <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
@@ -48,180 +48,186 @@
             </button>
         </nav>
 
-        <div class="p-4 border-t border-slate-100">
-            <div id="dbStatus" class="flex items-center gap-2 text-xs text-slate-500 mb-2">
-                <div class="w-2 h-2 rounded-full bg-slate-300"></div> Connecting...
+        <div class="p-4 border-t border-slate-100 bg-slate-50">
+            <div id="dbStatus" class="flex items-center gap-2 text-xs text-slate-500 mb-3 font-mono">
+                <div class="w-2 h-2 rounded-full bg-slate-300"></div> Waiting...
             </div>
-            <div class="flex gap-1">
+            <div class="flex flex-col gap-2">
                 <input type="file" id="globalCsvInput" accept=".csv" multiple class="hidden">
-                <button id="globalImportBtn" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white text-xs py-2 rounded transition-colors">Upload CSV</button>
-                <button id="globalResetBtn" class="px-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-xs" title="Reset DB">🗑️</button>
+                <button id="globalImportBtn" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs py-2.5 rounded shadow-sm transition-colors font-semibold">
+                    📥 Upload CSV
+                </button>
+                
+                <div class="flex gap-2">
+                    <button id="deleteByFileBtn" class="flex-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded text-xs py-2 font-semibold transition-colors">
+                        Del File
+                    </button>
+                    <button id="globalResetBtn" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-xs py-2 font-semibold transition-colors">
+                        Reset DB
+                    </button>
+                </div>
+                <input type="file" id="deleteFileInput" accept=".csv" class="hidden">
             </div>
-            <div id="uploadProgress" class="hidden mt-2 w-full bg-slate-100 h-1 rounded overflow-hidden"><div id="uploadBar" class="bg-green-500 h-full" style="width:0%"></div></div>
         </div>
     </aside>
 
-    <!-- 2. MAIN CONTENT AREA -->
-    <main class="flex-1 overflow-y-auto bg-slate-50 p-8 relative">
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-y-auto bg-white p-8 relative">
         
+        <!-- LOADING OVERLAY -->
+        <div id="loadingOverlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center hidden">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+            <p id="loadingText" class="text-indigo-800 font-semibold bg-indigo-50 px-4 py-2 rounded-lg shadow-sm">Loading Data...</p>
+            <div class="w-64 bg-gray-200 rounded-full h-2.5 mt-4 hidden" id="progressBarContainer">
+                <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+
         <!-- VIEW 1: DASHBOARD -->
-        <div id="view-dashboard" class="fade-in space-y-6">
-            <div class="flex justify-between items-end">
+        <div id="view-dashboard" class="fade-in space-y-8">
+            <div class="flex flex-col xl:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-slate-800">Dashboard Overview</h2>
-                    <p class="text-sm text-slate-500">Real-time sales analytics.</p>
+                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h2>
+                    <p class="text-sm text-slate-500 mt-1">
+                        Showing data for: <span id="currentRangeText" class="font-bold text-indigo-600">Loading...</span>
+                        <span id="recordCountDisplay" class="ml-2 font-mono bg-slate-100 px-2 py-0.5 rounded text-xs text-slate-500">0 rows</span>
+                    </p>
                 </div>
-                <div class="flex gap-3 items-center bg-white p-2 rounded-lg shadow-sm border">
-                    <input type="date" id="dashStart" class="text-sm border rounded px-2 py-1">
-                    <span class="text-slate-400">-</span>
-                    <input type="date" id="dashEnd" class="text-sm border rounded px-2 py-1">
-                    <button onclick="renderDashboard()" class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">Filter</button>
+                
+                <!-- Server-Side Filter Controls -->
+                <div class="flex flex-wrap gap-3 items-center bg-slate-50 p-2 rounded-lg border border-slate-200 shadow-sm">
+                    <div class="flex items-center gap-2">
+                        <input type="date" id="dashStart" class="text-sm border border-slate-300 rounded px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
+                        <span class="text-slate-400 font-bold">-</span>
+                        <input type="date" id="dashEnd" class="text-sm border border-slate-300 rounded px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
+                        <button onclick="fetchDataAndRender()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-indigo-700 shadow-sm">Load</button>
+                    </div>
+                    <div class="w-px h-6 bg-slate-300 mx-1 hidden md:block"></div>
+                    <div class="flex gap-2 items-center">
+                        <button onclick="setRange('7d')" class="px-3 py-1.5 bg-white border border-slate-300 text-slate-600 text-sm rounded hover:bg-indigo-50">7 Days</button>
+                        <button onclick="setRange('1m')" class="px-3 py-1.5 bg-white border border-slate-300 text-slate-600 text-sm rounded hover:bg-indigo-50">This Month</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Global KPIs -->
+            <!-- KPIs -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <p class="text-sm font-medium text-slate-500">Total Sales</p>
-                    <p class="text-3xl font-bold text-indigo-600 mt-1" id="dashSales">0.00</p>
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                    <p class="text-sm font-bold text-slate-400 uppercase tracking-wide">Total Sales</p>
+                    <p class="text-3xl font-black text-slate-800" id="dashSales">0.00</p>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <p class="text-sm font-medium text-slate-500">Total Sheets</p>
-                    <p class="text-3xl font-bold text-slate-900 mt-1" id="dashQty">0</p>
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                    <p class="text-sm font-bold text-slate-400 uppercase tracking-wide">Sheets Sold</p>
+                    <p class="text-3xl font-black text-slate-800" id="dashQty">0</p>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <p class="text-sm font-medium text-slate-500">Avg / Sheet</p>
-                    <p class="text-3xl font-bold text-slate-900 mt-1" id="dashAvg">0.00</p>
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                    <p class="text-sm font-bold text-slate-400 uppercase tracking-wide">Avg / Sheet</p>
+                    <p class="text-3xl font-black text-slate-800" id="dashAvg">0.00</p>
                 </div>
             </div>
 
             <!-- Branch Groups -->
             <div>
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-bold text-slate-800">Branch Group Analysis</h3>
-                    <button onclick="toggleRankingModal()" class="text-sm text-indigo-600 font-medium hover:underline">See All Rankings</button>
+                    <button onclick="toggleRankingModal()" class="text-sm text-indigo-600 font-bold hover:underline">View All Rankings</button>
                 </div>
-                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="groupCardsContainer">
-                    <!-- Group Cards injected via JS -->
-                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="groupCardsContainer"></div>
             </div>
         </div>
 
         <!-- VIEW 2: COMPARE -->
-        <div id="view-compare" class="hidden fade-in space-y-6">
-            <h2 class="text-2xl font-bold text-slate-800 mb-4">Sales Comparison</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- Period A -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-200">
-                    <h4 class="font-bold text-blue-800 mb-3">Period A</h4>
-                    <div class="flex gap-2 mb-4">
-                        <input type="date" id="compStartA" class="border rounded text-sm px-2 py-1 w-full">
-                        <input type="date" id="compEndA" class="border rounded text-sm px-2 py-1 w-full">
+        <div id="view-compare" class="hidden fade-in space-y-8">
+            <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">Sales Comparison</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-200">
+                    <h4 class="font-bold text-blue-800 mb-4">Period A</h4>
+                    <div class="flex gap-2 mb-6">
+                        <input type="date" id="compStartA" class="border p-2 w-full text-sm rounded">
+                        <input type="date" id="compEndA" class="border p-2 w-full text-sm rounded">
                     </div>
-                    <div class="flex justify-between items-end">
-                        <div>
-                            <p class="text-xs text-slate-500">Sales A</p>
-                            <p class="text-2xl font-bold text-slate-800" id="compValA">0</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-xs text-slate-500">Qty A</p>
-                            <p class="text-xl font-bold text-slate-600" id="compQtyA">0</p>
-                        </div>
-                    </div>
+                    <p class="text-3xl font-black text-slate-800" id="compValA">0.00</p>
+                    <p class="text-sm text-slate-500">Qty: <span id="compQtyA">0</span></p>
                 </div>
-
-                <!-- Period B -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-orange-200">
-                    <h4 class="font-bold text-orange-800 mb-3">Period B</h4>
-                    <div class="flex gap-2 mb-4">
-                        <input type="date" id="compStartB" class="border rounded text-sm px-2 py-1 w-full">
-                        <input type="date" id="compEndB" class="border rounded text-sm px-2 py-1 w-full">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200">
+                    <h4 class="font-bold text-orange-800 mb-4">Period B</h4>
+                    <div class="flex gap-2 mb-6">
+                        <input type="date" id="compStartB" class="border p-2 w-full text-sm rounded">
+                        <input type="date" id="compEndB" class="border p-2 w-full text-sm rounded">
                     </div>
-                    <div class="flex justify-between items-end">
-                        <div>
-                            <p class="text-xs text-slate-500">Sales B</p>
-                            <p class="text-2xl font-bold text-slate-800" id="compValB">0</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-xs text-slate-500">Qty B</p>
-                            <p class="text-xl font-bold text-slate-600" id="compQtyB">0</p>
-                        </div>
-                    </div>
+                    <p class="text-3xl font-black text-slate-800" id="compValB">0.00</p>
+                    <p class="text-sm text-slate-500">Qty: <span id="compQtyB">0</span></p>
                 </div>
             </div>
-            
-            <div class="flex justify-center">
-                <button onclick="renderCompare()" class="bg-slate-800 text-white px-6 py-2 rounded-full shadow-lg hover:bg-slate-900 transition-transform active:scale-95">Run Comparison</button>
-            </div>
-
-            <!-- Compare Charts -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <div class="h-80"><canvas id="compareChart"></canvas></div>
+            <div class="flex justify-center pt-4">
+                <button onclick="runCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 font-bold">Run Comparison</button>
             </div>
         </div>
 
         <!-- VIEW 3: P&L -->
-        <div id="view-pnl" class="hidden fade-in space-y-6">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold text-slate-800">Profit & Loss (By Branch)</h2>
-                <input type="month" id="pnlMonth" class="border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-indigo-500 text-slate-700 bg-white" onchange="renderPnL()">
+        <div id="view-pnl" class="hidden fade-in space-y-8">
+            <div class="flex justify-between items-end border-b border-slate-100 pb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">Profit & Loss</h2>
+                    <p class="text-sm text-slate-500 mt-1">Calculated from loaded data.</p>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-400 uppercase block mb-1">Select Month to Load</label>
+                    <input type="month" id="pnlMonth" class="border p-2 rounded shadow-sm" onchange="loadPnLMonth()">
+                </div>
             </div>
-
-            <div id="pnlContainer" class="space-y-8">
-                <!-- P&L Tables injected here -->
-            </div>
+            <div id="pnlContainer" class="space-y-8 pb-12"></div>
         </div>
 
     </main>
 
-    <!-- MODAL: ALL RANKINGS -->
-    <div id="rankingModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
-        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="toggleRankingModal()"></div>
-        <div class="modal-container bg-white w-11/12 md:max-w-4xl mx-auto rounded shadow-lg z-50 overflow-y-auto max-h-[90vh]">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h3 class="font-bold text-lg">All Time Rankings</h3>
-                <button onclick="toggleRankingModal()" class="text-slate-500 hover:text-red-500">✕</button>
+    <!-- MODAL -->
+    <div id="rankingModal" class="modal opacity-0 pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="toggleRankingModal()"></div>
+        <div class="bg-white w-11/12 md:max-w-5xl h-[85vh] rounded-2xl shadow-2xl z-10 flex flex-col overflow-hidden transform transition-all scale-95" id="modalContent">
+            <div class="flex justify-between items-center px-6 py-4 border-b">
+                <h3 class="font-bold text-xl">Rankings (Current Period)</h3>
+                <button onclick="toggleRankingModal()">✕</button>
             </div>
-            <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <h4 class="font-bold mb-2 text-indigo-600">Top Products (All)</h4>
-                    <div class="overflow-auto h-96 border rounded"><table class="w-full text-sm"><tbody id="modalProdBody"></tbody></table></div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden flex-1">
+                <div class="flex flex-col h-full">
+                    <h4 class="font-bold mb-3 text-indigo-600">Top Products</h4>
+                    <div class="flex-1 overflow-auto border rounded"><table class="w-full text-sm"><tbody id="modalProdBody"></tbody></table></div>
                 </div>
-                <div>
-                    <h4 class="font-bold mb-2 text-indigo-600">Top Branches (All)</h4>
-                    <div class="overflow-auto h-96 border rounded"><table class="w-full text-sm"><tbody id="modalBranchBody"></tbody></table></div>
+                <div class="flex flex-col h-full">
+                    <h4 class="font-bold mb-3 text-indigo-600">Top Branches</h4>
+                    <div class="flex-1 overflow-auto border rounded"><table class="w-full text-sm"><tbody id="modalBranchBody"></tbody></table></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIG ---
+        // CONFIG
         const SUPABASE_URL = 'https://lgaobgxeybmlrbsjgnfh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYW9iZ3hleWJtbHJic2pnbmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Nzk1OTYsImV4cCI6MjA4MDM1NTU5Nn0.rmGercp5u829OkeqzDq9R2wlR7lA3b2P4po2CZTXOZM';
         const TABLE = 'sales_records';
         const LOG_TABLE = 'upload_logs';
-        const MAX_FETCH = 20000;
+        const MAX_FETCH = 300000; // High limit for year data
 
-        let supabase, GLOBAL_DATA = [], charts = {};
+        let supabase, GLOBAL_DATA = [];
 
-        // --- INIT ---
         window.onload = async () => {
-            // Set Today for Dashboard
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dashStart').value = today;
-            document.getElementById('dashEnd').value = today;
+            // Default: This Month
+            const d = new Date();
+            const start = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
+            const end = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
             
-            // Set Current Month for P&L
-            document.getElementById('pnlMonth').value = today.slice(0, 7);
+            document.getElementById('dashStart').value = start;
+            document.getElementById('dashEnd').value = end;
+            document.getElementById('pnlMonth').value = start.slice(0, 7);
 
             try {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 const { count, error } = await supabase.from(TABLE).select('*', { count: 'exact', head: true });
                 if(!error) {
                     updateStatus(true, count);
-                    await loadAllData();
+                    await fetchDataAndRender(); // Fetch Selected Month on Load
                 } else {
                     updateStatus(false, error.message);
                 }
@@ -230,84 +236,82 @@
 
         function updateStatus(connected, msg) {
             const el = document.getElementById('dbStatus');
-            const color = connected ? 'bg-green-500' : 'bg-red-500';
-            el.innerHTML = `<div class="w-2 h-2 rounded-full ${color}"></div> ${connected ? 'Connected ('+msg+')' : 'Error'}`;
+            el.innerHTML = `<div class="w-2 h-2 rounded-full ${connected?'bg-green-500':'bg-red-500'}"></div> ${connected ? 'Connected ('+msg+')' : 'Error'}`;
         }
 
-        // --- CORE: FETCH ---
-        async function loadAllData() {
+        function showLoading(show, text="Loading...") {
+            const overlay = document.getElementById('loadingOverlay');
+            document.getElementById('loadingText').innerText = text;
+            overlay.classList[show?'remove':'add']('hidden');
+        }
+
+        // --- CORE: FETCH ON DEMAND ---
+        async function fetchData(startDate, endDate) {
+            showLoading(true, `Fetching ${startDate} to ${endDate}...`);
             let allRows = [], from = 0, pageSize = 1000, keepFetching = true;
+            
             try {
                 while(keepFetching) {
                     if(allRows.length >= MAX_FETCH) break;
-                    const { data, error } = await supabase.from(TABLE).select('*').range(from, from + pageSize - 1).order('id', {ascending: false});
+                    
+                    const { data, error } = await supabase
+                        .from(TABLE)
+                        .select('*')
+                        .gte('transaction_date', startDate)
+                        .lte('transaction_date', endDate)
+                        .range(from, from + pageSize - 1)
+                        .order('id', {ascending: false});
+                    
                     if (error) throw error;
-                    if (data.length) { allRows = allRows.concat(data); from += pageSize; }
+                    if (data.length) { 
+                        allRows = allRows.concat(data); 
+                        from += pageSize; 
+                    }
                     if (data.length < pageSize) keepFetching = false;
-                    await new Promise(r => setTimeout(r, 0)); // Anti-freeze
+                    
+                    document.getElementById('loadingText').innerText = `Loaded ${allRows.length} rows...`;
+                    await new Promise(r => setTimeout(r, 0));
                 }
-                GLOBAL_DATA = allRows;
-                renderDashboard(); // Initial Render
-            } catch(e) { alert("Load Error: " + e.message); }
+            } catch(e) { 
+                alert("Load Error: " + e.message); 
+                return [];
+            } finally {
+                showLoading(false);
+            }
+            return allRows;
         }
 
-        // --- NAVIGATION ---
-        window.switchTab = (tab) => {
-            ['dashboard', 'compare', 'pnl'].forEach(t => {
-                document.getElementById(`view-${t}`).classList.add('hidden');
-                document.getElementById(`nav-${t}`).classList.remove('active');
-            });
-            document.getElementById(`view-${tab}`).classList.remove('hidden');
-            document.getElementById(`nav-${tab}`).classList.add('active');
+        async function fetchDataAndRender() {
+            const s = document.getElementById('dashStart').value;
+            const e = document.getElementById('dashEnd').value;
+            if(!s || !e) return alert("Select dates");
             
-            if(tab === 'dashboard') renderDashboard();
-            if(tab === 'pnl') renderPnL();
-        };
-
-        // --- LOGIC: GROUPING HELPER ---
-        function getGroup(branch) {
-            const b = (branch || "").toUpperCase();
-            if (b.includes('MOSHI') || b.includes('MS')) return 'Moshi';
-            if (b.includes('B2S')) return 'B2S';
-            return 'Wanyen';
+            GLOBAL_DATA = await fetchData(s, e);
+            
+            document.getElementById('recordCountDisplay').innerText = `${GLOBAL_DATA.length} rows`;
+            document.getElementById('currentRangeText').innerText = `${s} to ${e}`;
+            renderDashboard();
         }
 
-        // --- VIEW 1: DASHBOARD ---
+        // --- DASHBOARD ---
         function renderDashboard() {
-            const sDate = document.getElementById('dashStart').value;
-            const eDate = document.getElementById('dashEnd').value;
-            const data = GLOBAL_DATA.filter(r => r.transaction_date >= sDate && r.transaction_date <= eDate);
-            
-            // Global KPIs
             let sum=0, qty=0;
-            const groups = {
-                'Moshi': {sum:0, qty:0, prod:{}, branch:{}},
-                'B2S': {sum:0, qty:0, prod:{}, branch:{}},
-                'Wanyen': {sum:0, qty:0, prod:{}, branch:{}}
-            };
+            const groups = {'Moshi': {sum:0, qty:0}, 'B2S': {sum:0, qty:0}, 'Wanyen': {sum:0, qty:0}};
             const globalProd = {}, globalBranch = {};
 
-            data.forEach(r => {
-                const v = r.total_amount || 0;
-                const q = r.quantity || 0;
+            GLOBAL_DATA.forEach(r => {
+                const v = Number(r.total_amount) || 0;
+                const q = Number(r.quantity) || 0;
                 const g = getGroup(r.branch_name);
-                
                 sum += v; qty += q;
                 groups[g].sum += v; groups[g].qty += q;
-
-                // Rank Logic
+                
                 const p = r.product || "?";
                 const b = r.branch_name || "?";
-                
-                // Global Ranks
-                if(!globalProd[p]) globalProd[p] = 0; globalProd[p] += v;
-                if(!globalBranch[b]) globalBranch[b] = 0; globalBranch[b] += v;
-
-                // Group Ranks (Simplified for dashboard card)
-                // ... (Skipped for brevity on card, used in modal if needed)
+                globalProd[p] = (globalProd[p]||0) + v;
+                globalBranch[b] = (globalBranch[b]||0) + v;
             });
 
-            // Render UI
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
             const num = new Intl.NumberFormat('en-US');
             
@@ -315,235 +319,106 @@
             document.getElementById('dashQty').innerText = num.format(qty);
             document.getElementById('dashAvg').innerText = cur.format(qty ? sum/qty : 0);
 
-            // Render Group Cards
+            // Render Groups
             const container = document.getElementById('groupCardsContainer');
             container.innerHTML = '';
-            
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
                 const d = groups[grp];
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                
-                const html = `
-                <div class="group-card bg-white rounded-xl border border-${color}-200 overflow-hidden">
-                    <div class="bg-${color}-50 px-4 py-3 border-b border-${color}-100 flex justify-between">
-                        <span class="font-bold text-${color}-700">${grp}</span>
+                container.innerHTML += `
+                <div class="bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                    <div class="bg-${color}-50 px-5 py-4 border-b border-${color}-100 flex justify-between items-center">
+                        <span class="font-bold text-${color}-700 text-lg">${grp}</span>
                     </div>
-                    <div class="p-4 grid grid-cols-3 gap-2 text-center">
-                        <div><p class="text-[10px] text-slate-400 uppercase">Sales</p><p class="font-bold text-slate-800">${cur.format(d.sum)}</p></div>
-                        <div><p class="text-[10px] text-slate-400 uppercase">Sheets</p><p class="font-bold text-slate-800">${num.format(d.qty)}</p></div>
-                        <div><p class="text-[10px] text-slate-400 uppercase">Avg</p><p class="font-bold text-slate-800">${cur.format(d.qty ? d.sum/d.qty : 0)}</p></div>
+                    <div class="p-5 grid grid-cols-3 gap-4 text-center">
+                        <div><p class="text-[10px] text-slate-400 font-bold uppercase">Sales</p><p class="font-bold text-slate-800 text-lg">${cur.format(d.sum)}</p></div>
+                        <div class="border-l border-r border-slate-100"><p class="text-[10px] text-slate-400 font-bold uppercase">Sheets</p><p class="font-bold text-slate-800 text-lg">${num.format(d.qty)}</p></div>
+                        <div><p class="text-[10px] text-slate-400 font-bold uppercase">Avg</p><p class="font-bold text-slate-800 text-lg">${cur.format(d.qty ? d.sum/d.qty : 0)}</p></div>
                     </div>
                 </div>`;
-                container.innerHTML += html;
             });
 
-            // Prepare Modal Data
             fillModalTable('modalProdBody', globalProd, cur);
             fillModalTable('modalBranchBody', globalBranch, cur);
         }
 
+        function getGroup(branch) {
+            const b = (branch || "").toUpperCase();
+            if (b.includes('MOSHI') || b.includes('MS')) return 'Moshi';
+            if (b.includes('B2S')) return 'B2S';
+            return 'Wanyen';
+        }
+
         function fillModalTable(id, obj, cur) {
-            const html = Object.entries(obj)
-                .sort((a,b) => b[1] - a[1])
-                .map(([k,v], i) => `<tr class="border-b"><td class="p-2 text-gray-500 w-8">${i+1}</td><td class="p-2 truncate max-w-[200px]">${k}</td><td class="p-2 text-right font-mono">${cur.format(v)}</td></tr>`)
-                .join('');
+            const html = Object.entries(obj).sort((a,b) => b[1]-a[1]).map(([k,v], i) => 
+                `<tr class="hover:bg-slate-50"><td class="p-2 text-slate-400">${i+1}</td><td class="p-2">${k}</td><td class="p-2 text-right font-mono">${cur.format(v)}</td></tr>`
+            ).join('');
             document.getElementById(id).innerHTML = html;
         }
-        
-        window.toggleRankingModal = () => {
-            const modal = document.getElementById('rankingModal');
-            modal.classList.toggle('opacity-0');
-            modal.classList.toggle('pointer-events-none');
-            document.body.classList.toggle('modal-active');
-        };
 
-        // --- VIEW 2: COMPARE ---
-        window.renderCompare = () => {
-            const rangeA = { s: document.getElementById('compStartA').value, e: document.getElementById('compEndA').value };
-            const rangeB = { s: document.getElementById('compStartB').value, e: document.getElementById('compEndB').value };
+        // --- COMPARISON ---
+        async function runCompare() {
+            const sA = document.getElementById('compStartA').value;
+            const eA = document.getElementById('compEndA').value;
+            const sB = document.getElementById('compStartB').value;
+            const eB = document.getElementById('compEndB').value;
 
-            if(!rangeA.s || !rangeA.e || !rangeB.s || !rangeB.e) return alert("Please select both date ranges.");
+            if(!sA || !eA || !sB || !eB) return alert("Select all dates");
 
-            const dataA = GLOBAL_DATA.filter(r => r.transaction_date >= rangeA.s && r.transaction_date <= rangeA.e);
-            const dataB = GLOBAL_DATA.filter(r => r.transaction_date >= rangeB.s && r.transaction_date <= rangeB.e);
+            const dataA = await fetchData(sA, eA);
+            const dataB = await fetchData(sB, eB);
 
-            const calc = (d) => {
-                let s = 0, q = 0;
-                d.forEach(r => { s += r.total_amount||0; q += r.quantity||0; });
-                return { s, q };
-            };
+            const calc = (d) => d.reduce((acc, r) => ({s: acc.s + (Number(r.total_amount)||0), q: acc.q + (Number(r.quantity)||0)}), {s:0, q:0});
+            const rA = calc(dataA);
+            const rB = calc(dataB);
 
-            const resA = calc(dataA);
-            const resB = calc(dataB);
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
             const num = new Intl.NumberFormat('en-US');
 
-            document.getElementById('compValA').innerText = cur.format(resA.s);
-            document.getElementById('compQtyA').innerText = num.format(resA.q);
-            document.getElementById('compValB').innerText = cur.format(resB.s);
-            document.getElementById('compQtyB').innerText = num.format(resB.q);
+            document.getElementById('compValA').innerText = cur.format(rA.s);
+            document.getElementById('compQtyA').innerText = num.format(rA.q);
+            document.getElementById('compValB').innerText = cur.format(rB.s);
+            document.getElementById('compQtyB').innerText = num.format(rB.q);
+        }
 
-            // Chart
-            if(charts.compare) charts.compare.destroy();
-            charts.compare = new Chart(document.getElementById('compareChart'), {
-                type: 'bar',
-                data: {
-                    labels: ['Total Sales', 'Total Qty'],
-                    datasets: [
-                        { label: 'Period A', data: [resA.s, resA.q], backgroundColor: '#3b82f6' },
-                        { label: 'Period B', data: [resB.s, resB.q], backgroundColor: '#f97316' }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        };
-
-        // --- VIEW 3: P&L ---
-        window.renderPnL = () => {
-            const monthStr = document.getElementById('pnlMonth').value; // YYYY-MM
-            if(!monthStr) return;
-
-            const data = GLOBAL_DATA.filter(r => r.transaction_date.startsWith(monthStr));
+        // --- P&L ---
+        async function loadPnLMonth() {
+            const m = document.getElementById('pnlMonth').value;
+            if(!m) return;
             
-            // Group Data
-            const report = {};
-            data.forEach(r => {
-                const grp = getGroup(r.branch_name);
-                const br = r.branch_name || "Unknown";
-                if(!report[grp]) report[grp] = {};
-                if(!report[grp][br]) report[grp][br] = 0;
-                report[grp][br] += (r.total_amount||0);
-            });
+            const [y, month] = m.split('-');
+            const start = `${y}-${month}-01`;
+            const end = new Date(y, month, 0).toISOString().split('T')[0];
 
+            const data = await fetchData(start, end);
+            renderPnLTable(data, m);
+        }
+
+        function renderPnLTable(data, monthStr) {
             const container = document.getElementById('pnlContainer');
             container.innerHTML = '';
+            if(!data.length) { container.innerHTML = '<p class="text-center text-gray-500">No data</p>'; return; }
+
+            const report = {};
+            data.forEach(r => {
+                const g = getGroup(r.branch_name);
+                const b = r.branch_name || "Unknown";
+                if(!report[g]) report[g] = {};
+                if(!report[g][b]) report[g][b] = 0;
+                report[g][b] += (Number(r.total_amount)||0);
+            });
+
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
 
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
                 if(!report[grp]) return;
-                
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                let rowsHtml = '';
-                let totalSales = 0;
+                let rows = '';
+                let total = 0;
 
-                Object.entries(report[grp]).forEach(([branch, sales]) => {
-                    totalSales += sales;
-                    // Get stored cost from LocalStorage
-                    const costKey = `COST_${monthStr}_${branch}`;
-                    const savedCost = localStorage.getItem(costKey) || 0;
-                    const profit = sales - savedCost;
-                    const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
-
-                    rowsHtml += `
-                    <tr class="border-b">
-                        <td class="py-2 px-4 text-sm text-slate-700">${branch}</td>
-                        <td class="py-2 px-4 text-right font-mono text-slate-600">${cur.format(sales)}</td>
-                        <td class="py-2 px-4 text-right">
-                            <input type="number" value="${savedCost}" 
-                                class="border rounded px-2 py-1 text-right w-24 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                                onchange="updateCost('${costKey}', this.value, ${sales}, this)">
-                        </td>
-                        <td class="py-2 px-4 text-right font-mono font-bold ${profitColor} profit-cell">${cur.format(profit)}</td>
-                    </tr>`;
-                });
-
-                const html = `
-                <div class="bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm">
-                    <div class="bg-${color}-50 px-6 py-3 border-b border-${color}-100 font-bold text-${color}-800 flex justify-between">
-                        <span>${grp} Group</span>
-                        <span>Total Sales: ${cur.format(totalSales)}</span>
-                    </div>
-                    <table class="w-full">
-                        <thead class="bg-slate-50 text-xs uppercase text-slate-500 text-right">
-                            <tr><th class="text-left px-4 py-2">Branch</th><th class="px-4">Sales</th><th class="px-4">Rent/Cost</th><th class="px-4">Net Profit</th></tr>
-                        </thead>
-                        <tbody>${rowsHtml}</tbody>
-                    </table>
-                </div>`;
-                container.innerHTML += html;
-            });
-        };
-
-        window.updateCost = (key, val, sales, el) => {
-            localStorage.setItem(key, val);
-            const profit = sales - val;
-            const row = el.closest('tr');
-            const profitCell = row.querySelector('.profit-cell');
-            
-            // Update UI immediately
-            profitCell.innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'}).format(profit);
-            profitCell.className = `py-2 px-4 text-right font-mono font-bold profit-cell ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`;
-        };
-
-        // --- UPLOAD & UTILS ---
-        document.getElementById('globalImportBtn').onclick = () => document.getElementById('globalCsvInput').click();
-        
-        document.getElementById('globalCsvInput').onchange = async (e) => {
-            const files = e.target.files;
-            if(!files.length) return;
-            
-            const bar = document.getElementById('uploadBar');
-            document.getElementById('uploadProgress').classList.remove('hidden');
-
-            for(let i=0; i<files.length; i++) {
-                const f = files[i];
-                // Check Log
-                const { data: exists } = await supabase.from(LOG_TABLE).select('*').eq('filename', f.name).single();
-                if(exists) { alert(`Skipped: ${f.name} (Already Uploaded)`); continue; }
-
-                await new Promise(resolve => {
-                    Papa.parse(f, {
-                        header: false, skipEmptyLines: true,
-                        complete: async (res) => {
-                            const rows = res.data.map(transform).filter(r => r);
-                            const batch = 500;
-                            for(let j=0; j<Math.ceil(rows.length/batch); j++) {
-                                await supabase.from(TABLE).insert(rows.slice(j*batch, (j+1)*batch));
-                                bar.style.width = Math.round(((j+1)/(rows.length/batch))*100)+"%";
-                            }
-                            await supabase.from(LOG_TABLE).insert({ filename: f.name, total_rows: rows.length });
-                            resolve();
-                        }
-                    });
-                });
-            }
-            alert("Done");
-            document.getElementById('uploadProgress').classList.add('hidden');
-            window.location.reload(); // Simple reload to refresh all data
-        };
-
-        function transform(row) {
-            // (Same transform logic as V.18 - omitted for brevity, it's included in the file)
-            // ... Copy transform function from V.18 here if needed, but basically:
-            if(row.length < 11) return null;
-            const [d, t] = (row[1]||"").trim().split(" ");
-            if(!d) return null;
-            const ds = d.split("/");
-            if(ds.length !== 3) return null;
-            let y = parseInt(ds[2]); if(y>2400) y-=543;
-            const iso = `${y}-${ds[1].padStart(2,'0')}-${ds[0].padStart(2,'0')}`;
-            let time = t || "00:00:00"; time = time.split(':').map(x=>x.padStart(2,'0')).join(':');
-            
-            return {
-                timestamp: new Date(`${iso}T${time}`).toISOString(),
-                transaction_date: iso,
-                transaction_time: time,
-                product: (row[3]||"").trim(),
-                quantity: parseInt(row[9]||0),
-                price_per_sheet: 0, // Simplify
-                total_amount: parseFloat((row[10]||"0").replace(/,/g, "")),
-                payment_type: (row[11]||"").trim(),
-                branch_name: (row[14]||"").trim()
-            };
-        }
-
-        document.getElementById('globalResetBtn').onclick = async () => {
-            if(!confirm("DELETE ALL?")) return;
-            await supabase.from(TABLE).delete().neq('id', 0);
-            await supabase.from(LOG_TABLE).delete().neq('id', 0);
-            location.reload();
-        };
-
-    </script>
-</body>
-</html>
+                Object.entries(report[grp]).forEach(([br, sales]) => {
+                    total += sales;
+                    const key = `COST_${monthStr}_${br}`;
+                    const cost = localStorage.getItem(key) || 0;
+                    const profit = sales - cost;
+                    const pColor = profit >= 0
