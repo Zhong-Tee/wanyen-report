@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.28 (Layout & Compare Fix)</title>
+    <title>SalesPulse V.29 (Cloud Cost & UI Fixes)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -35,21 +35,11 @@
         </div>
 
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors active">
-                Dashboard
-            </button>
-            <button onclick="switchTab('branch')" id="nav-branch" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
-                Branch Analysis
-            </button>
-            <button onclick="switchTab('cost')" id="nav-cost" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
-                Branch Cost
-            </button>
-            <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
-                Sales Compare
-            </button>
-            <button onclick="switchTab('pnl')" id="nav-pnl" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
-                Profit & Loss
-            </button>
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors active">Dashboard</button>
+            <button onclick="switchTab('branch')" id="nav-branch" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Branch Analysis</button>
+            <button onclick="switchTab('cost')" id="nav-cost" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Branch Cost</button>
+            <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Sales Compare</button>
+            <button onclick="switchTab('pnl')" id="nav-pnl" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Profit & Loss</button>
         </nav>
 
         <div class="p-4 border-t border-slate-100 bg-slate-50">
@@ -122,9 +112,17 @@
                     </div>
                 </div>
             </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-slate-800">Branch Group Analysis</h3>
+                    <button onclick="toggleRankingModal()" class="text-sm text-indigo-600 font-bold hover:underline">View Full Rankings</button>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="groupCardsContainer"></div>
+            </div>
         </div>
 
-        <!-- 2. BRANCH ANALYSIS (FIXED HEIGHT) -->
+        <!-- 2. BRANCH ANALYSIS -->
         <div id="view-branch" class="hidden fade-in space-y-8">
              <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div>
@@ -138,21 +136,21 @@
                     <button onclick="renderBranchView()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-indigo-700">Update</button>
                 </div>
             </div>
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="branchCardsContainer">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="branchCardsContainerFull">
                 <!-- Cards Injected Here -->
             </div>
         </div>
 
-        <!-- 3. BRANCH COST -->
+        <!-- 3. BRANCH COST (CLOUD) -->
         <div id="view-cost" class="hidden fade-in space-y-6">
             <div class="border-b border-slate-100 pb-4">
-                <h2 class="text-3xl font-bold text-slate-900">Branch Cost Settings</h2>
-                <p class="text-sm text-slate-500">Set Rent and GP% for each branch.</p>
+                <h2 class="text-3xl font-bold text-slate-900">Branch Cost Settings (Cloud)</h2>
+                <p class="text-sm text-slate-500">Set Rent and GP% for each branch. Data is saved to Database.</p>
             </div>
             <div id="costContainer" class="grid grid-cols-1 xl:grid-cols-3 gap-8"></div>
         </div>
 
-        <!-- 4. COMPARE (FIXED) -->
+        <!-- 4. COMPARE (2 GRAPHS) -->
         <div id="view-compare" class="hidden fade-in space-y-8">
             <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">Sales Comparison</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -170,7 +168,17 @@
                 </div>
             </div>
             <div class="flex justify-center pt-4"><button onclick="runCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 font-bold">Run Comparison</button></div>
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mt-6"><div class="h-96"><canvas id="compareChart"></canvas></div></div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h4 class="font-bold text-slate-700 mb-4">Total Sales Comparison</h4>
+                    <div class="h-80"><canvas id="compareSalesChart"></canvas></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h4 class="font-bold text-slate-700 mb-4">Total Quantity Comparison</h4>
+                    <div class="h-80"><canvas id="compareQtyChart"></canvas></div>
+                </div>
+            </div>
         </div>
 
         <!-- 5. P&L -->
@@ -202,9 +210,11 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYW9iZ3hleWJtbHJic2pnbmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Nzk1OTYsImV4cCI6MjA4MDM1NTU5Nn0.rmGercp5u829OkeqzDq9R2wlR7lA3b2P4po2CZTXOZM';
         const TABLE = 'sales_records';
         const LOG_TABLE = 'upload_logs';
+        const COST_TABLE = 'branch_costs';
         const MAX_FETCH = 300000; 
 
         let supabase, GLOBAL_DATA = [], charts = {};
+        let BRANCH_COSTS_CACHE = {}; // Cache for performance
 
         window.onload = async () => {
             initYearPicker();
@@ -221,7 +231,8 @@
                 if(!error) {
                     updateStatus(true, count);
                     setupEventListeners();
-                    await fetchDataAndRender(); 
+                    await fetchDataAndRender();
+                    await loadCostData(); // Preload costs
                 } else {
                     updateStatus(false, error.message);
                 }
@@ -230,7 +241,7 @@
 
         function updateStatus(connected, msg) {
             const el = document.getElementById('dbStatus');
-            el.innerHTML = `<div class="w-2 h-2 rounded-full ${connected?'bg-green-500':'bg-red-500'}"></div> ${connected ? 'Connected ('+msg+')' : 'Error'}`;
+            el.innerHTML = `<div class="w-2 h-2 rounded-full ${connected?'bg-green-500':'bg-red-500'}"></div> ${connected ? 'Connected ('+msg+')' : 'Error: '+msg}`;
         }
 
         function showLoading(show, text="Loading...") {
@@ -271,54 +282,39 @@
 
         function renderDashboard() {
             let sum=0, qty=0;
+            const groups = {'Moshi': {sum:0, qty:0}, 'B2S': {sum:0, qty:0}, 'Wanyen': {sum:0, qty:0}};
             const dailyStats = {}, weeklyStats = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+            const globalProd = {}, globalBranch = {};
 
             GLOBAL_DATA.forEach(r => {
                 const v = Number(r.total_amount)||0;
                 const q = Number(r.quantity)||0;
+                const g = getGroup(r.branch_name);
                 sum+=v; qty+=q;
+                groups[g].sum+=v; groups[g].qty+=q;
+
                 dailyStats[r.transaction_date] = (dailyStats[r.transaction_date]||0)+v;
                 const dayIdx = new Date(r.timestamp).getDay();
                 weeklyStats[dayIdx] += v;
+
+                const p = r.product || "?"; const b = r.branch_name || "?";
+                globalProd[p] = (globalProd[p]||0)+v; globalBranch[b] = (globalBranch[b]||0)+v;
             });
 
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
             const num = new Intl.NumberFormat('en-US');
+            
             document.getElementById('dashSales').innerText = cur.format(sum);
             document.getElementById('dashQty').innerText = num.format(qty);
             document.getElementById('dashAvg').innerText = cur.format(qty ? sum/qty : 0);
 
             renderCharts(dailyStats, weeklyStats);
+            renderGroups(groups, cur, num, 'groupCardsContainer'); // Reused for Dashboard
+            fillModalTable('modalProdBody', globalProd, cur);
+            fillModalTable('modalBranchBody', globalBranch, cur);
         }
 
-        function renderCharts(daily, weekly) {
-            const sortedDates = Object.keys(daily).sort();
-            const trendData = sortedDates.map(d => daily[d]);
-            if(charts.trend) charts.trend.destroy();
-            charts.trend = new Chart(document.getElementById('salesTrendChart'), {
-                type: 'bar',
-                data: { labels: sortedDates, datasets: [{ label: 'Sales', data: trendData, backgroundColor: '#4f46e5', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false}, datalabels: { display: false } } }
-            });
-
-            const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-            const weekData = [0,1,2,3,4,5,6].map(i => weekly[i]);
-            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
-
-            if(charts.weekly) charts.weekly.destroy();
-            charts.weekly = new Chart(document.getElementById('weeklySalesChart'), {
-                type: 'bar',
-                data: { labels: dayLabels, datasets: [{ label: 'Sales', data: weekData, backgroundColor: '#10b981', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false}, datalabels: { display: false } } }
-            });
-
-            // Vertical Table
-            document.getElementById('weeklySummaryTable').innerHTML = dayLabels.map((d, i) => 
-                `<tr class="hover:bg-slate-50"><td class="py-2 px-3 text-slate-600">${d}</td><td class="py-2 px-3 text-right font-mono font-bold text-slate-800">${cur.format(weekData[i])}</td></tr>`
-            ).join('');
-        }
-
-        // --- 2. BRANCH VIEW ---
+        // --- BRANCH ANALYSIS PAGE ---
         function renderBranchView() {
             const s = document.getElementById('branchStart').value;
             const e = document.getElementById('branchEnd').value;
@@ -335,7 +331,7 @@
 
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
             const num = new Intl.NumberFormat('en-US');
-            const container = document.getElementById('branchCardsContainer');
+            const container = document.getElementById('branchCardsContainerFull');
             container.innerHTML = '';
 
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
@@ -344,7 +340,6 @@
                 
                 const prodStats = {}, branchStats = {};
                 d.data.forEach(r => { prodStats[r.product||"?"]=(prodStats[r.product||"?"]||0)+Number(r.total_amount); branchStats[r.branch_name||"?"]=(branchStats[r.branch_name||"?"]||0)+Number(r.total_amount); });
-                
                 const topProd = Object.entries(prodStats).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v],i)=>`<tr class="border-b border-${color}-50 text-xs"><td class="py-1 text-slate-500 w-4">${i+1}</td><td class="py-1 truncate max-w-[80px]" title="${k}">${k}</td><td class="py-1 text-right">${cur.format(v)}</td></tr>`).join('');
                 const topBr = Object.entries(branchStats).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v],i)=>`<tr class="border-b border-${color}-50 text-xs"><td class="py-1 text-slate-500 w-4">${i+1}</td><td class="py-1 truncate max-w-[80px]" title="${k}">${k}</td><td class="py-1 text-right">${cur.format(v)}</td></tr>`).join('');
 
@@ -352,14 +347,14 @@
                 <div class="bg-white rounded-xl border border-${color}-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full">
                     <div class="bg-${color}-50 px-5 py-3 border-b border-${color}-100 flex justify-between items-center">
                         <h3 class="font-bold text-${color}-700 text-lg">${grp}</h3>
-                        <span class="text-xs bg-white px-2 py-1 rounded font-bold border border-${color}-200 text-${color}-600">${d.branches.size} Br</span>
+                        <span class="text-xs bg-white px-2 py-1 rounded font-bold border border-${color}-200 text-${color}-600 text-center min-w-[80px]">${d.branches.size} Branches</span>
                     </div>
                     <div class="p-4 flex-1 space-y-4">
                         <div class="grid grid-cols-2 gap-2 text-center">
                             <div><p class="text-[10px] text-slate-400 font-bold">SALES</p><p class="font-bold text-slate-800">${cur.format(d.sum)}</p></div>
                             <div><p class="text-[10px] text-slate-400 font-bold">QTY</p><p class="font-bold text-slate-800">${num.format(d.qty)}</p></div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2"> <!-- Removed Fixed Height -->
+                        <div class="grid grid-cols-2 gap-2"> 
                             <div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP PRODUCTS</p><table class="w-full">${topProd}</table></div>
                             <div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP BRANCHES</p><table class="w-full">${topBr}</table></div>
                         </div>
@@ -371,26 +366,42 @@
             });
         }
 
-        window.openGroupModal = (grp) => {
-            const s = document.getElementById('branchStart').value;
-            const e = document.getElementById('branchEnd').value;
-            const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e && getGroup(r.branch_name) === grp);
-            const prod={}, br={};
-            data.forEach(r=>{ const v=Number(r.total_amount)||0; prod[r.product||"?"]=(prod[r.product||"?"]||0)+v; br[r.branch_name||"?"]=(br[r.branch_name||"?"]||0)+v; });
-            document.getElementById('modalTitle').innerText = `${grp} - All Data (${s} to ${e})`;
-            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
-            const fill = (id, obj) => { document.getElementById(id).innerHTML = Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>`<tr class="hover:bg-slate-50"><td class="p-3 pl-4 text-slate-400 w-10">${i+1}</td><td class="p-3 text-slate-700 font-medium">${k}</td><td class="p-3 text-right font-mono font-bold">${cur.format(v)}</td></tr>`).join(''); };
-            fill('modalProdBody', prod); fill('modalBranchBody', br);
-            toggleRankingModal();
-        };
+        // --- DASHBOARD HELPER ---
+        function renderGroups(groups, cur, num, targetId) {
+             const container = document.getElementById(targetId);
+             container.innerHTML = '';
+             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
+                const d = groups[grp];
+                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
+                container.innerHTML += `
+                <div class="group-card bg-white rounded-xl border border-${color}-200 p-4 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-center mb-3 pb-2 border-b border-${color}-100">
+                        <span class="font-bold text-${color}-700 text-lg">${grp}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div><p class="text-[10px] text-slate-400 font-bold uppercase">Sales</p><p class="font-bold text-slate-800">${cur.format(d.sum)}</p></div>
+                        <div class="border-l border-r border-slate-100"><p class="text-[10px] text-slate-400 font-bold uppercase">Sheets</p><p class="font-bold text-slate-800">${num.format(d.qty)}</p></div>
+                        <div><p class="text-[10px] text-slate-400 font-bold uppercase">Avg</p><p class="font-bold text-slate-800">${cur.format(d.qty ? d.sum/d.qty : 0)}</p></div>
+                    </div>
+                </div>`;
+             });
+        }
 
-        // --- 3. COST ---
+        // --- COST MANAGEMENT (CLOUD) ---
+        async function loadCostData() {
+            const { data, error } = await supabase.from(COST_TABLE).select('*');
+            if(!error) {
+                BRANCH_COSTS_CACHE = {};
+                data.forEach(c => BRANCH_COSTS_CACHE[c.branch_name] = {rent: c.rent, gp: c.gp_percent});
+            }
+        }
+
         function renderCostSettings() {
             const branches = new Set();
             GLOBAL_DATA.forEach(r => branches.add(r.branch_name || "Unknown"));
             const container = document.getElementById('costContainer');
             container.innerHTML = '';
-            const stored = JSON.parse(localStorage.getItem('BRANCH_COSTS')) || {};
+            
             const groups = {'Moshi': [], 'B2S': [], 'Wanyen': []};
             Array.from(branches).sort().forEach(b => groups[getGroup(b)].push(b));
 
@@ -398,35 +409,37 @@
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
                 let rows = '';
                 groups[grp].forEach(br => {
-                    const s = stored[br] || {rent:0, gp:0};
-                    rows += `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-4 text-xs font-medium truncate max-w-[150px]" title="${br}">${br}</td><td class="py-2 px-2 text-right"><input type="number" value="${s.rent}" class="border rounded w-20 text-right text-xs p-1" onchange="saveCost('${br}', 'rent', this.value)"></td><td class="py-2 px-2 text-right"><input type="number" value="${s.gp}" class="border rounded w-14 text-right text-xs p-1" onchange="saveCost('${br}', 'gp', this.value)"></td><td class="py-2 px-2 text-center"><button onclick="deleteCost('${br}')" class="text-red-400 hover:text-red-600">×</button></td></tr>`;
+                    const s = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0};
+                    rows += `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-4 text-xs font-medium truncate max-w-[150px]" title="${br}">${br}</td><td class="py-2 px-2 text-right"><input type="number" value="${s.rent}" class="border rounded w-20 text-right text-xs p-1" onchange="saveCostCloud('${br}', 'rent', this.value)"></td><td class="py-2 px-2 text-right"><input type="number" value="${s.gp}" class="border rounded w-14 text-right text-xs p-1" onchange="saveCostCloud('${br}', 'gp', this.value)"></td><td class="py-2 px-2 text-center"><button onclick="deleteCostCloud('${br}')" class="text-red-400 hover:text-red-600">×</button></td></tr>`;
                 });
                 container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 overflow-hidden"><div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm">${grp}</div><div class="max-h-96 overflow-y-auto"><table class="w-full"><thead class="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th class="text-left px-4 py-2">Branch</th><th class="px-2 text-right">Rent</th><th class="px-2 text-right">%GP</th><th class="px-2"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
             });
         }
 
-        window.saveCost = (br, type, val) => {
-            const stored = JSON.parse(localStorage.getItem('BRANCH_COSTS')) || {};
-            if(!stored[br]) stored[br] = {rent:0, gp:0};
-            stored[br][type] = Number(val);
-            localStorage.setItem('BRANCH_COSTS', JSON.stringify(stored));
+        window.saveCostCloud = async (br, type, val) => {
+            const current = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0};
+            if(type === 'rent') current.rent = Number(val);
+            if(type === 'gp') current.gp = Number(val);
+            
+            BRANCH_COSTS_CACHE[br] = current; // Optimistic Update
+
+            const { error } = await supabase.from(COST_TABLE).upsert({ branch_name: br, rent: current.rent, gp_percent: current.gp }, { onConflict: 'branch_name' });
+            if(error) alert("Save Failed: " + error.message);
         };
 
-        window.deleteCost = (br) => {
+        window.deleteCostCloud = async (br) => {
             if(!confirm("Reset cost settings for "+br+"?")) return;
-            const stored = JSON.parse(localStorage.getItem('BRANCH_COSTS')) || {};
-            delete stored[br];
-            localStorage.setItem('BRANCH_COSTS', JSON.stringify(stored));
+            delete BRANCH_COSTS_CACHE[br];
             renderCostSettings();
+            await supabase.from(COST_TABLE).delete().eq('branch_name', br);
         };
 
-        // --- 4. COMPARE ---
+        // --- COMPARE (SEPARATE CHARTS) ---
         window.runCompare = async () => {
             const sA = document.getElementById('compStartA').value; const eA = document.getElementById('compEndA').value;
             const sB = document.getElementById('compStartB').value; const eB = document.getElementById('compEndB').value;
             if(!sA || !eA || !sB || !eB) return alert("Select dates");
             
-            // FIX: Fetch Data Independently
             const dataA = await fetchData(sA, eA);
             const dataB = await fetchData(sB, eB);
 
@@ -438,13 +451,19 @@
             document.getElementById('compValA').innerText = cur.format(rA.s); document.getElementById('compQtyA').innerText = num.format(rA.q);
             document.getElementById('compValB').innerText = cur.format(rB.s); document.getElementById('compQtyB').innerText = num.format(rB.q);
 
-            if(charts.compare) charts.compare.destroy();
-            charts.compare = new Chart(document.getElementById('compareChart').getContext('2d'), {
-                type: 'bar', data: { labels: ['Sales', 'Qty'], datasets: [{ label: 'Period A', data: [rA.s, rA.q], backgroundColor: '#3b82f6' }, { label: 'Period B', data: [rB.s, rB.q], backgroundColor: '#f97316' }] }, options: { responsive: true, maintainAspectRatio: false }
+            if(charts.compSales) charts.compSales.destroy();
+            if(charts.compQty) charts.compQty.destroy();
+
+            charts.compSales = new Chart(document.getElementById('compareSalesChart').getContext('2d'), {
+                type: 'bar', data: { labels: ['Sales'], datasets: [{ label: 'Period A', data: [rA.s], backgroundColor: '#3b82f6' }, { label: 'Period B', data: [rB.s], backgroundColor: '#f97316' }] }, options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            charts.compQty = new Chart(document.getElementById('compareQtyChart').getContext('2d'), {
+                type: 'bar', data: { labels: ['Quantity'], datasets: [{ label: 'Period A', data: [rA.q], backgroundColor: '#60a5fa' }, { label: 'Period B', data: [rB.q], backgroundColor: '#fdba74' }] }, options: { responsive: true, maintainAspectRatio: false }
             });
         };
 
-        // --- 5. P&L ---
+        // --- P&L (USING CLOUD DATA) ---
         async function loadPnLMonth() {
             const m = document.getElementById('pnlMonth').value; if(!m) return;
             const [y, mo] = m.split('-'); const data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
@@ -453,105 +472,66 @@
             const container = document.getElementById('pnlContainer'); container.innerHTML = '';
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
             
-            // Load Costs
-            const costs = JSON.parse(localStorage.getItem('BRANCH_COSTS')) || {};
+            // Use Cache
+            const costs = BRANCH_COSTS_CACHE;
 
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
                 if(!report[grp]) return;
+                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
                 let rows = ''; let total = 0;
                 Object.entries(report[grp]).forEach(([br, sales]) => {
+                    total += sales;
                     const setting = costs[br] || {rent:0, gp:0};
                     const rent = setting.rent;
                     const gpDed = sales * (setting.gp / 100);
                     const profit = sales - rent - gpDed;
-                    total+=profit; // Sum Net Profit
-                    const k = `COST_PNL_${br}`; // Temporary key for input binding visualization
-
-                    rows += `<tr class="border-b hover:bg-slate-50 text-sm">
-                        <td class="py-2 px-4">${br}</td>
-                        <td class="text-right font-mono">${cur.format(sales)}</td>
-                        <td class="text-right text-slate-500">${cur.format(rent)}</td>
-                        <td class="text-right text-slate-500">${setting.gp}% (${cur.format(gpDed)})</td>
-                        <td class="text-right font-bold ${profit>=0?'text-emerald-600':'text-red-600'}">${cur.format(profit)}</td>
-                    </tr>`;
+                    
+                    rows += `<tr class="border-b hover:bg-slate-50 text-sm"><td class="py-2 px-4">${br}</td><td class="text-right font-mono">${cur.format(sales)}</td><td class="text-right text-slate-500">${cur.format(rent)}</td><td class="text-right text-slate-500">${setting.gp}% (${cur.format(gpDed)})</td><td class="text-right font-bold font-mono ${profit>=0?'text-emerald-600':'text-red-600'}">${cur.format(profit)}</td></tr>`;
                 });
-                container.innerHTML += `<div class="bg-white rounded-xl border border-${grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange')}-200 overflow-hidden shadow-sm"><div class="bg-gray-50 px-6 py-3 border-b flex justify-between font-bold"><span>${grp} Group</span><span>Net Profit: ${cur.format(total)}</span></div><table class="w-full"><thead><tr class="text-xs text-slate-500 bg-slate-50 border-b"><th class="px-4 py-2 text-left">Branch</th><th class="text-right">Sales</th><th class="text-right">Rent</th><th class="text-right">GP Ded.</th><th class="text-right">Net Profit</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 shadow-sm overflow-hidden"><div class="bg-${color}-50 px-6 py-3 border-b flex justify-between font-bold"><span>${grp} Group</span><span>Net Profit (Est.): ${cur.format(total)}</span></div><table class="w-full"><thead><tr class="text-xs text-slate-500 bg-slate-50 border-b"><th class="px-4 py-2 text-left">Branch</th><th class="text-right">Sales</th><th class="text-right">Rent</th><th class="text-right">GP Ded.</th><th class="text-right">Net Profit</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             });
         }
 
-        // UTILS
+        // Charts & Utils
+        function renderCharts(daily, weekly) {
+            const sortedDates = Object.keys(daily).sort();
+            const trendData = sortedDates.map(d => daily[d]);
+            if(charts.trend) charts.trend.destroy();
+            charts.trend = new Chart(document.getElementById('salesTrendChart'), { type: 'bar', data: { labels: sortedDates, datasets: [{ label: 'Sales', data: trendData, backgroundColor: '#4f46e5', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false}, datalabels: { display: false } } } });
+
+            const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            const weekData = [1,2,3,4,5,6,0].map(i => weekly[i]);
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
+
+            if(charts.weekly) charts.weekly.destroy();
+            charts.weekly = new Chart(document.getElementById('weeklySalesChart'), { type: 'bar', data: { labels: dayLabels, datasets: [{ label: 'Sales', data: weekData, backgroundColor: '#10b981', borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false}, datalabels: { anchor: 'end', align: 'top', formatter: val => val >= 1000 ? (val/1000).toFixed(1)+'k' : val, font: { weight: 'bold' }, color: '#64748b' } }, layout: { padding: { top: 20 } } } });
+
+            document.getElementById('weeklySummaryTable').innerHTML = dayLabels.map((d, i) => `<tr class="hover:bg-slate-50"><td class="py-3 px-4 font-medium text-slate-600 text-sm">${d}</td><td class="py-3 px-4 text-right font-mono text-slate-800 text-sm font-bold">${cur.format(weekData[i])}</td></tr>`).join('');
+        }
+
+        window.openGroupModal = (grp) => {
+            const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
+            const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e && getGroup(r.branch_name) === grp);
+            const prod={}, br={};
+            data.forEach(r=>{ const v=Number(r.total_amount)||0; prod[r.product||"?"]=(prod[r.product||"?"]||0)+v; br[r.branch_name||"?"]=(br[r.branch_name||"?"]||0)+v; });
+            document.getElementById('modalTitle').innerText = `${grp} - All Data (${s} to ${e})`;
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
+            const fill = (id, obj) => { document.getElementById(id).innerHTML = Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>`<tr class="hover:bg-slate-50"><td class="p-3 pl-4 text-slate-400 w-10">${i+1}</td><td class="p-3 text-slate-700 font-medium">${k}</td><td class="p-3 text-right font-mono font-bold">${cur.format(v)}</td></tr>`).join(''); };
+            fill('modalProdBody', prod); fill('modalBranchBody', br);
+            toggleRankingModal();
+        };
+
+        window.toggleRankingModal = () => { const m=document.getElementById('rankingModal'); m.classList.toggle('opacity-0'); m.classList.toggle('pointer-events-none'); document.body.classList.toggle('modal-active'); };
+        window.closeModal = () => toggleRankingModal();
+        window.switchTab = (t) => { ['dashboard', 'compare', 'pnl', 'branch', 'cost'].forEach(x => document.getElementById(`view-${x}`).classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); if(t==='pnl') loadPnLMonth(); if(t==='cost') renderCostSettings(); if(t==='branch') renderBranchView(); };
         function getGroup(b) { b=(b||"").toUpperCase(); if(b.includes('MOSHI')||b.includes('MS')) return 'Moshi'; if(b.includes('B2S')) return 'B2S'; return 'Wanyen'; }
         function initYearPicker() { const s = document.getElementById('dashYearPicker'); const y = new Date().getFullYear(); for(let i=y;i>=y-5;i--){let o=document.createElement('option'); o.value=i; o.innerText=i; s.appendChild(o);} }
-        
         window.filterDash7Days = () => { const e=new Date(); const s=new Date(); s.setDate(e.getDate()-6); setDash(s,e); };
         window.filterDashByMonth = (m) => { if(!m) return; const [y,mo]=m.split('-'); setDash(new Date(y,mo-1,1), new Date(y,mo,0)); };
         window.filterDashByYear = (y) => { if(!y) return; setDash(new Date(y,0,1), new Date(y,11,31)); };
         function setDash(s,e) { const f=d=>d.toISOString().split('T')[0]; document.getElementById('dashStart').value=f(s); document.getElementById('dashEnd').value=f(e); fetchDataAndRender(); }
-
-        window.switchTab = (t) => {
-            ['dashboard', 'compare', 'pnl', 'branch', 'cost'].forEach(x => {
-                document.getElementById(`view-${x}`).classList.add('hidden');
-                const btn = document.getElementById(`nav-${x}`);
-                if(btn) btn.classList.remove('active');
-            });
-            document.getElementById(`view-${t}`).classList.remove('hidden');
-            document.getElementById(`nav-${t}`).classList.add('active');
-            if(t==='pnl') loadPnLMonth();
-            if(t==='cost') renderCostSettings();
-            if(t==='branch') renderBranchView();
-        };
-
-        window.closeModal = () => toggleRankingModal();
-
-        function setupEventListeners() {
-            document.getElementById('globalImportBtn').onclick = () => document.getElementById('globalCsvInput').click();
-            document.getElementById('globalCsvInput').onchange = async (e) => {
-                const files = e.target.files; if(!files.length) return;
-                showLoading(true, "Uploading...");
-                for(let i=0; i<files.length; i++) {
-                    const f = files[i];
-                    const { data: exists } = await supabase.from(LOG_TABLE).select('*').eq('filename', f.name).single();
-                    if(exists) { alert(`❌ BLOCK: ${f.name} already exists!`); continue; }
-                    await new Promise(r => Papa.parse(f, {header:false, skipEmptyLines:true, complete: async(res)=>{
-                        const rows=res.data.map(transform).filter(x=>x);
-                        const batch=500; for(let j=0;j<Math.ceil(rows.length/batch);j++) await supabase.from(TABLE).insert(rows.slice(j*batch,(j+1)*batch));
-                        if(!exists) await supabase.from(LOG_TABLE).insert({filename:f.name, total_rows:rows.length});
-                        r();
-                    }}));
-                }
-                showLoading(false); alert("Done"); fetchDataAndRender();
-            };
-            
-            document.getElementById('deleteByFileBtn').onclick = () => document.getElementById('deleteFileInput').click();
-            document.getElementById('deleteFileInput').onchange = async (e) => {
-                const f=e.target.files[0]; if(!f||!confirm("Delete data from "+f.name+"?")) return;
-                showLoading(true);
-                Papa.parse(f, {header:false, skipEmptyLines:true, complete:async(res)=>{
-                    const rows=res.data.map(transform).filter(x=>x);
-                    const batch=50; 
-                    for(let j=0;j<Math.ceil(rows.length/batch);j++) {
-                        const chunk = rows.slice(j*batch,(j+1)*batch);
-                        await Promise.all(chunk.map(r=>supabase.from(TABLE).delete().match({transaction_date:r.transaction_date, transaction_time:r.transaction_time, branch_name:r.branch_name, total_amount:r.total_amount})));
-                    }
-                    await supabase.from(LOG_TABLE).delete().eq('filename',f.name);
-                    showLoading(false); alert("Deleted"); fetchDataAndRender();
-                }});
-            };
-
-            document.getElementById('globalResetBtn').onclick = async () => {
-                if(confirm("DELETE ALL DATA?")) { await supabase.from(TABLE).delete().neq('id',0); await supabase.from(LOG_TABLE).delete().neq('id',0); alert("Cleared"); location.reload(); }
-            };
-        }
-
-        function transform(row) {
-            if(row.length < 11) return null;
-            const [d, t] = (row[1]||"").trim().split(" "); if(!d) return null;
-            const ds = d.split("/"); if(ds.length!==3) return null;
-            let y = parseInt(ds[2]); if(y>2400) y-=543;
-            const iso = `${y}-${ds[1].padStart(2,'0')}-${ds[0].padStart(2,'0')}`;
-            let time = t || "00:00:00"; time = time.split(':').map(x=>x.padStart(2,'0')).join(':');
-            return { timestamp: new Date(`${iso}T${time}`).toISOString(), transaction_date: iso, transaction_time: time, product: (row[3]||"").trim(), quantity: parseInt(row[9]||0), price_per_sheet: 0, total_amount: parseFloat((row[10]||"0").replace(/,/g, "")), payment_type: (row[11]||"").trim(), branch_name: (row[14]||"").trim() };
-        }
+        function setupEventListeners() { document.getElementById('globalImportBtn').onclick=()=>document.getElementById('globalCsvInput').click(); document.getElementById('globalCsvInput').onchange=async(e)=>{ /* ...Import Logic... */ const files=e.target.files; if(!files.length) return; showLoading(true); for(let i=0;i<files.length;i++){ const f=files[i]; const {data:exists}=await supabase.from(LOG_TABLE).select('*').eq('filename',f.name).single(); if(exists){alert("File exists!");continue;} await new Promise(r=>Papa.parse(f,{header:false,skipEmptyLines:true,complete:async(res)=>{ const rows=res.data.map(transform).filter(x=>x); const batch=500; for(let j=0;j<Math.ceil(rows.length/batch);j++) await supabase.from(TABLE).insert(rows.slice(j*batch,(j+1)*batch)); await supabase.from(LOG_TABLE).insert({filename:f.name, total_rows:rows.length}); r(); }})); } showLoading(false); alert("Done"); fetchDataAndRender(); }; document.getElementById('deleteByFileBtn').onclick=()=>document.getElementById('deleteFileInput').click(); document.getElementById('deleteFileInput').onchange=async(e)=>{ /* ...Delete Logic... */ const f=e.target.files[0]; if(!f||!confirm("Delete?")) return; showLoading(true); Papa.parse(f, {header:false, skipEmptyLines:true, complete:async(res)=>{ const rows=res.data.map(transform).filter(x=>x); const batch=50; for(let j=0;j<Math.ceil(rows.length/batch);j++) { const chunk=rows.slice(j*batch,(j+1)*batch); await Promise.all(chunk.map(r=>supabase.from(TABLE).delete().match({transaction_date:r.transaction_date, transaction_time:r.transaction_time, branch_name:r.branch_name, total_amount:r.total_amount}))); } await supabase.from(LOG_TABLE).delete().eq('filename',f.name); showLoading(false); alert("Deleted"); fetchDataAndRender(); }}); }; document.getElementById('globalResetBtn').onclick=async()=>{ if(confirm("Reset DB?")) { await supabase.from(TABLE).delete().neq('id',0); await supabase.from(LOG_TABLE).delete().neq('id',0); alert("Cleared"); location.reload(); } }; }
+        function transform(row) { if(row.length<11) return null; const [d,t]=(row[1]||"").trim().split(" "); if(!d) return null; const ds=d.split("/"); if(ds.length!==3) return null; let y=parseInt(ds[2]); if(y>2400) y-=543; const iso=`${y}-${ds[1].padStart(2,'0')}-${ds[0].padStart(2,'0')}`; let time=t||"00:00:00"; time=time.split(':').map(x=>x.padStart(2,'0')).join(':'); return { timestamp: new Date(`${iso}T${time}`).toISOString(), transaction_date: iso, transaction_time: time, product: (row[3]||"").trim(), quantity: parseInt(row[9]||0), price_per_sheet: 0, total_amount: parseFloat((row[10]||"0").replace(/,/g, "")), payment_type: (row[11]||"").trim(), branch_name: (row[14]||"").trim() }; }
     </script>
 </body>
 </html>
