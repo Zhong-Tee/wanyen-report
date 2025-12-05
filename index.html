@@ -3,21 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.21 (Stable Load)</title>
+    <title>SalesPulse V.23 (Dashboard Charts)</title>
     
-    <!-- Libraries (Updated CDN) -->
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <style>
+        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        .nav-item.active { background-color: #e0e7ff; color: #4338ca; border-right: 3px solid #4338ca; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modal & Overlay */
         .modal { transition: opacity 0.25s ease; }
         body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
         #loadingOverlay { backdrop-filter: blur(2px); background: rgba(255,255,255,0.8); }
@@ -25,112 +29,300 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex overflow-hidden">
 
+    <!-- SIDEBAR MENU -->
     <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-lg">
         <div class="h-16 flex items-center px-6 border-b border-slate-100 bg-slate-50">
             <div class="bg-indigo-600 text-white p-1.5 rounded mr-3">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
-            <span class="font-bold text-lg text-slate-800">SalesPulse</span>
+            <span class="font-bold text-lg text-slate-800 tracking-tight">SalesPulse</span>
         </div>
 
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors active">Dashboard</button>
-            <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Compare</button>
-            <button onclick="switchTab('pnl')" id="nav-pnl" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Profit & Loss</button>
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors active">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                Dashboard
+            </button>
+            <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Sales Compare
+            </button>
+            <button onclick="switchTab('pnl')" id="nav-pnl" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Profit & Loss
+            </button>
         </nav>
 
         <div class="p-4 border-t border-slate-100 bg-slate-50">
-            <div id="dbStatus" class="flex items-center gap-2 text-xs text-slate-500 mb-3">
-                <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div> Initializing...
+            <div id="dbStatus" class="flex items-center gap-2 text-xs text-slate-500 mb-3 font-mono">
+                <div class="w-2 h-2 rounded-full bg-slate-300"></div> Initializing...
             </div>
             <div class="flex flex-col gap-2">
                 <input type="file" id="globalCsvInput" accept=".csv" multiple class="hidden">
-                <button id="globalImportBtn" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs py-2.5 rounded">📥 Upload CSV</button>
+                <button id="globalImportBtn" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs py-2.5 rounded shadow-sm transition-colors font-semibold">
+                    📥 Upload CSV
+                </button>
+                
                 <div class="flex gap-2">
-                    <button id="deleteByFileBtn" class="flex-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded text-xs py-2">Del File</button>
-                    <button id="globalResetBtn" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-xs py-2">Reset DB</button>
+                    <button id="deleteByFileBtn" class="flex-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded text-xs py-2 font-semibold transition-colors">
+                        Del File
+                    </button>
+                    <button id="globalResetBtn" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-xs py-2 font-semibold transition-colors">
+                        Reset DB
+                    </button>
                 </div>
+                <!-- Hidden input for delete logic -->
                 <input type="file" id="deleteFileInput" accept=".csv" class="hidden">
             </div>
-            <div id="uploadProgress" class="hidden mt-2 w-full bg-slate-200 h-1 rounded overflow-hidden"><div id="uploadBar" class="bg-green-500 h-full" style="width:0%"></div></div>
         </div>
     </aside>
 
+    <!-- MAIN CONTENT -->
     <main class="flex-1 overflow-y-auto bg-white p-8 relative">
         
-        <!-- LOADING OVERLAY -->
+        <!-- LOADING SPINNER -->
         <div id="loadingOverlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center hidden">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
-            <p id="loadingText" class="text-indigo-800 font-semibold">Loading Data...</p>
+            <p id="loadingText" class="text-indigo-800 font-semibold bg-indigo-50 px-4 py-2 rounded-lg shadow-sm">Loading Data...</p>
         </div>
 
         <!-- VIEW 1: DASHBOARD -->
         <div id="view-dashboard" class="fade-in space-y-8">
+            
+            <!-- HEADER & FILTERS -->
             <div class="flex flex-col xl:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div>
-                    <h2 class="text-3xl font-bold text-slate-900">Dashboard</h2>
+                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h2>
                     <p class="text-sm text-slate-500 mt-1">
-                        <span id="recordCountDisplay" class="font-mono bg-slate-100 px-2 py-0.5 rounded text-xs">0 rows</span>
+                        <span id="recordCountDisplay" class="font-mono bg-slate-100 px-2 py-0.5 rounded text-xs">0 Records</span>
                     </p>
                 </div>
                 
-                <!-- Controls -->
-                <div class="flex flex-wrap gap-3 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
-                    <input type="date" id="dashStart" class="text-sm border rounded px-2 py-1.5">
-                    <span class="text-slate-400">-</span>
-                    <input type="date" id="dashEnd" class="text-sm border rounded px-2 py-1.5">
-                    <button onclick="fetchDataAndRender()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm hover:bg-indigo-700">Go</button>
+                <!-- Filter Controls -->
+                <div class="flex flex-wrap gap-3 items-center bg-slate-50 p-2 rounded-lg border border-slate-200 shadow-sm">
+                    <!-- Date Range Manual -->
+                    <div class="flex items-center gap-2">
+                        <input type="date" id="dashStart" class="text-sm border border-slate-300 rounded px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
+                        <span class="text-slate-400 font-bold">-</span>
+                        <input type="date" id="dashEnd" class="text-sm border border-slate-300 rounded px-2 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-600">
+                        <button onclick="fetchDataAndRender()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-indigo-700 shadow-sm">Go</button>
+                    </div>
                     
                     <div class="w-px h-6 bg-slate-300 mx-1 hidden md:block"></div>
-                    <button onclick="setRange('7d')" class="px-3 py-1.5 bg-white border rounded text-xs hover:bg-indigo-50">7 Days</button>
-                    <button onclick="setRange('1m')" class="px-3 py-1.5 bg-white border rounded text-xs hover:bg-indigo-50">This Month</button>
+
+                    <!-- Quick Buttons -->
+                    <div class="flex gap-2 items-center">
+                        <button onclick="filterDash7Days()" class="px-3 py-1.5 bg-white border border-slate-300 text-slate-600 text-sm rounded hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-300 transition-all font-medium">
+                            7 Days
+                        </button>
+                        <input type="month" id="dashMonthPicker" onchange="filterDashMonth(this.value)" 
+                               class="px-2 py-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white hover:border-indigo-300 focus:outline-none cursor-pointer" 
+                               title="Select Month">
+                        <select id="dashYearPicker" onchange="filterDashYear(this.value)" 
+                                class="px-2 py-1.5 border border-slate-300 rounded text-sm text-slate-600 bg-white hover:border-indigo-300 focus:outline-none cursor-pointer">
+                            <option value="">Year</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <!-- KPIs -->
+            <!-- Global KPIs -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><p class="text-sm font-bold text-slate-400 uppercase">Total Sales</p><p class="text-3xl font-black text-slate-800" id="dashSales">0.00</p></div>
-                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><p class="text-sm font-bold text-slate-400 uppercase">Sheets Sold</p><p class="text-3xl font-black text-slate-800" id="dashQty">0</p></div>
-                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><p class="text-sm font-bold text-slate-400 uppercase">Avg / Sheet</p><p class="text-3xl font-black text-slate-800" id="dashAvg">0.00</p></div>
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+                        <span class="text-sm font-bold text-slate-400 uppercase tracking-wide">Total Sales</span>
+                    </div>
+                    <p class="text-3xl font-black text-slate-800" id="dashSales">0.00</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                         <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+                        <span class="text-sm font-bold text-slate-400 uppercase tracking-wide">Sheets Sold</span>
+                    </div>
+                    <p class="text-3xl font-black text-slate-800" id="dashQty">0</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-3 mb-3">
+                         <div class="p-2 bg-amber-50 text-amber-600 rounded-lg"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg></div>
+                        <span class="text-sm font-bold text-slate-400 uppercase tracking-wide">Avg / Sheet</span>
+                    </div>
+                    <p class="text-3xl font-black text-slate-800" id="dashAvg">0.00</p>
+                </div>
             </div>
 
-            <!-- Groups -->
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="groupCardsContainer"></div>
+            <!-- NEW CHARTS SECTION (Added V.23) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left: Sales Trend (Daily) -->
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Sales Trend (Selected Period)</h3>
+                    <div class="h-72 relative w-full">
+                        <canvas id="salesTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Right: Weekly Sales (Mon-Sun) -->
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Sales by Day of Week</h3>
+                    <div class="h-72 relative w-full">
+                        <canvas id="weeklySalesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Branch Groups -->
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        Branch Group Analysis
+                    </h3>
+                    <button onclick="toggleRankingModal()" class="text-sm text-indigo-600 font-bold hover:text-indigo-800 hover:underline flex items-center gap-1">
+                        View Full Rankings
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="groupCardsContainer">
+                    <!-- Group Cards injected via JS -->
+                </div>
+            </div>
         </div>
 
         <!-- VIEW 2: COMPARE -->
         <div id="view-compare" class="hidden fade-in space-y-8">
-            <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">Compare</h2>
+            <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">Sales Comparison</h2>
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-xl border border-blue-200"><h4 class="font-bold text-blue-800 mb-4">Period A</h4><input type="date" id="compStartA" class="border p-1"><input type="date" id="compEndA" class="border p-1"><p class="text-3xl font-black mt-2" id="compValA">0</p></div>
-                <div class="bg-white p-6 rounded-xl border border-orange-200"><h4 class="font-bold text-orange-800 mb-4">Period B</h4><input type="date" id="compStartB" class="border p-1"><input type="date" id="compEndB" class="border p-1"><p class="text-3xl font-black mt-2" id="compValB">0</p></div>
+                <!-- Period A -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-200 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+                    <h4 class="font-bold text-blue-800 mb-4 flex justify-between">Period A <span class="text-xs font-normal text-blue-500 bg-blue-50 px-2 py-1 rounded">Baseline</span></h4>
+                    <div class="flex gap-2 mb-6">
+                        <input type="date" id="compStartA" class="border border-slate-300 rounded px-3 py-2 w-full text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="date" id="compEndA" class="border border-slate-300 rounded px-3 py-2 w-full text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Sales</p>
+                            <p class="text-3xl font-black text-slate-800 mt-1" id="compValA">0.00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Quantity</p>
+                            <p class="text-xl font-bold text-slate-600 mt-1" id="compQtyA">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Period B -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1.5 h-full bg-orange-500"></div>
+                    <h4 class="font-bold text-orange-800 mb-4 flex justify-between">Period B <span class="text-xs font-normal text-orange-500 bg-orange-50 px-2 py-1 rounded">Comparison</span></h4>
+                    <div class="flex gap-2 mb-6">
+                        <input type="date" id="compStartB" class="border border-slate-300 rounded px-3 py-2 w-full text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+                        <input type="date" id="compEndB" class="border border-slate-300 rounded px-3 py-2 w-full text-sm focus:ring-2 focus:ring-orange-500 outline-none">
+                    </div>
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Sales</p>
+                            <p class="text-3xl font-black text-slate-800 mt-1" id="compValB">0.00</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Quantity</p>
+                            <p class="text-xl font-bold text-slate-600 mt-1" id="compQtyB">0</p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <button onclick="runCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full mt-4 block mx-auto">Run</button>
-            <div class="h-80 mt-6"><canvas id="compareChart"></canvas></div>
+            
+            <div class="flex justify-center pt-4">
+                <button onclick="renderCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 transition-all active:scale-95 font-bold flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Compare Data
+                </button>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="h-96"><canvas id="compareChart"></canvas></div>
+            </div>
         </div>
 
         <!-- VIEW 3: P&L -->
         <div id="view-pnl" class="hidden fade-in space-y-8">
             <div class="flex justify-between items-end border-b border-slate-100 pb-6">
-                <h2 class="text-3xl font-bold text-slate-900">Profit & Loss</h2>
-                <input type="month" id="pnlMonth" class="border p-2 rounded" onchange="loadPnLMonth()">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">Profit & Loss</h2>
+                    <p class="text-sm text-slate-500 mt-1">Calculate net profit by branch group.</p>
+                </div>
+                <div class="flex flex-col items-end">
+                    <label class="text-xs font-bold text-slate-400 uppercase mb-1">Select Month</label>
+                    <input type="month" id="pnlMonth" class="border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-indigo-500 text-slate-700 bg-white font-medium" onchange="renderPnL()">
+                </div>
             </div>
-            <div id="pnlContainer" class="space-y-8"></div>
+
+            <div id="pnlContainer" class="space-y-8 pb-12">
+                <!-- P&L Tables injected here -->
+            </div>
         </div>
+
     </main>
 
+    <!-- MODAL: ALL RANKINGS -->
+    <div id="rankingModal" class="modal opacity-0 pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="toggleRankingModal()"></div>
+        <div class="bg-white w-11/12 md:max-w-5xl h-[85vh] rounded-2xl shadow-2xl z-10 flex flex-col overflow-hidden transform transition-all scale-95" id="modalContent">
+            <div class="flex justify-between items-center px-6 py-4 border-b border-slate-100">
+                <h3 class="font-bold text-xl text-slate-800">Detailed Rankings</h3>
+                <button onclick="toggleRankingModal()" class="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden flex-1">
+                <div class="flex flex-col h-full">
+                    <h4 class="font-bold mb-3 text-indigo-600 flex items-center gap-2">
+                        <span class="bg-indigo-100 p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg></span>
+                        Top Products (All Time)
+                    </h4>
+                    <div class="flex-1 overflow-auto border border-slate-200 rounded-xl shadow-inner bg-slate-50">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-white sticky top-0 shadow-sm text-xs uppercase text-slate-500">
+                                <tr><th class="p-3 pl-4 w-12">#</th><th class="p-3">Product</th><th class="p-3 text-right pr-4">Total Sales</th></tr>
+                            </thead>
+                            <tbody id="modalProdBody" class="divide-y divide-slate-200/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="flex flex-col h-full">
+                    <h4 class="font-bold mb-3 text-indigo-600 flex items-center gap-2">
+                        <span class="bg-indigo-100 p-1 rounded"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg></span>
+                        Top Branches (All Time)
+                    </h4>
+                    <div class="flex-1 overflow-auto border border-slate-200 rounded-xl shadow-inner bg-slate-50">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-white sticky top-0 shadow-sm text-xs uppercase text-slate-500">
+                                <tr><th class="p-3 pl-4 w-12">#</th><th class="p-3">Branch</th><th class="p-3 text-right pr-4">Total Sales</th></tr>
+                            </thead>
+                            <tbody id="modalBranchBody" class="divide-y divide-slate-200/50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // --- CONFIG ---
         const SUPABASE_URL = 'https://lgaobgxeybmlrbsjgnfh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYW9iZ3hleWJtbHJic2pnbmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Nzk1OTYsImV4cCI6MjA4MDM1NTU5Nn0.rmGercp5u829OkeqzDq9R2wlR7lA3b2P4po2CZTXOZM';
         const TABLE = 'sales_records';
         const LOG_TABLE = 'upload_logs';
-        const MAX_FETCH = 60000; 
+        const MAX_FETCH = 300000; // High limit
 
         let supabase, GLOBAL_DATA = [], charts = {};
 
-        // INIT
-        window.addEventListener('load', async () => {
-            // Set Default Dates
+        // --- INIT ---
+        window.onload = async () => {
+            initYearPicker(); // New Filters
+
+            // Default Dates
             const d = new Date();
             const s = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
             const e = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0];
@@ -140,29 +332,21 @@
             document.getElementById('pnlMonth').value = s.slice(0, 7);
 
             try {
-                // Ensure Supabase Lib Loaded
-                if(typeof createClient === 'undefined' && window.supabase) supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                else if(typeof supabase === 'undefined') throw new Error("Supabase Lib Failed");
-                
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 const { count, error } = await supabase.from(TABLE).select('*', { count: 'exact', head: true });
-                
                 if(!error) {
                     updateStatus(true, count);
-                    setupEventListeners();
-                    await fetchDataAndRender(); 
+                    await fetchDataAndRender(); // Fetch on load
                 } else {
                     updateStatus(false, error.message);
                 }
-            } catch(err) {
-                updateStatus(false, err.message);
-                console.error(err);
-            }
-        });
+            } catch(e) { updateStatus(false, e.message); }
+        };
 
         function updateStatus(connected, msg) {
             const el = document.getElementById('dbStatus');
             const color = connected ? 'bg-green-500' : 'bg-red-500';
-            el.innerHTML = `<div class="w-2 h-2 rounded-full ${color}"></div> ${connected ? 'Connected ('+msg+')' : 'Error: '+msg}`;
+            el.innerHTML = `<div class="w-2 h-2 rounded-full ${color}"></div> ${connected ? 'Connected ('+msg+')' : 'Error: ' + msg}`;
         }
 
         function showLoading(show, text="Loading...") {
@@ -171,44 +355,78 @@
             overlay.classList[show?'remove':'add']('hidden');
         }
 
-        // CORE FETCH
-        async function fetchData(s, e) {
-            showLoading(true, "Fetching...");
+        // --- CORE: FETCH ON DEMAND ---
+        async function fetchData(startDate, endDate) {
+            showLoading(true, `Fetching ${startDate} to ${endDate}...`);
             let allRows = [], from = 0, pageSize = 1000, keepFetching = true;
+            
             try {
                 while(keepFetching) {
                     if(allRows.length >= MAX_FETCH) break;
-                    const { data, error } = await supabase.from(TABLE).select('*').gte('transaction_date', s).lte('transaction_date', e).range(from, from + pageSize - 1);
+                    
+                    const { data, error } = await supabase
+                        .from(TABLE)
+                        .select('*')
+                        .gte('transaction_date', startDate)
+                        .lte('transaction_date', endDate)
+                        .range(from, from + pageSize - 1)
+                        .order('id', {ascending: false});
+                    
                     if (error) throw error;
-                    if (data.length) { allRows = allRows.concat(data); from += pageSize; }
+                    if (data.length) { 
+                        allRows = allRows.concat(data); 
+                        from += pageSize; 
+                    }
                     if (data.length < pageSize) keepFetching = false;
+                    
                     await new Promise(r => setTimeout(r, 0));
                 }
-            } catch(e) { alert("Error: " + e.message); return []; } 
-            finally { showLoading(false); }
+            } catch(e) { 
+                alert("Load Error: " + e.message); 
+                return [];
+            } finally {
+                showLoading(false);
+            }
             return allRows;
         }
 
         async function fetchDataAndRender() {
             const s = document.getElementById('dashStart').value;
             const e = document.getElementById('dashEnd').value;
-            if(!s || !e) return;
+            if(!s || !e) return alert("Select dates");
+            
             GLOBAL_DATA = await fetchData(s, e);
+            
             document.getElementById('recordCountDisplay').innerText = `${GLOBAL_DATA.length} rows`;
             renderDashboard();
         }
 
-        // DASHBOARD RENDER
+        // --- DASHBOARD ---
         function renderDashboard() {
             let sum=0, qty=0;
             const groups = {'Moshi': {sum:0, qty:0}, 'B2S': {sum:0, qty:0}, 'Wanyen': {sum:0, qty:0}};
+            const globalProd = {}, globalBranch = {};
             
+            // Aggregation for Charts
+            const dailyStats = {};
+            const weeklyStats = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0};
+
             GLOBAL_DATA.forEach(r => {
-                const v = Number(r.total_amount)||0;
-                const q = Number(r.quantity)||0;
+                const v = Number(r.total_amount) || 0;
+                const q = Number(r.quantity) || 0;
                 const g = getGroup(r.branch_name);
-                sum+=v; qty+=q;
-                groups[g].sum+=v; groups[g].qty+=q;
+                sum += v; qty += q;
+                groups[g].sum += v; groups[g].qty += q;
+                
+                const p = r.product || "?";
+                const b = r.branch_name || "?";
+                globalProd[p] = (globalProd[p]||0) + v;
+                globalBranch[b] = (globalBranch[b]||0) + v;
+
+                // Chart Data
+                dailyStats[r.transaction_date] = (dailyStats[r.transaction_date]||0) + v;
+                const dayIdx = new Date(r.timestamp).getDay();
+                weeklyStats[dayIdx] += v;
             });
 
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
@@ -218,50 +436,223 @@
             document.getElementById('dashQty').innerText = num.format(qty);
             document.getElementById('dashAvg').innerText = cur.format(qty ? sum/qty : 0);
 
+            // Render Charts (NEW)
+            renderCharts(dailyStats, weeklyStats);
+
+            // Render Groups
             const container = document.getElementById('groupCardsContainer');
             container.innerHTML = '';
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
                 const d = groups[grp];
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 p-4"><h4 class="font-bold text-${color}-600 mb-2">${grp}</h4><div class="flex justify-between text-sm"><span>Sales: ${cur.format(d.sum)}</span><span>Qty: ${num.format(d.qty)}</span></div></div>`;
+                container.innerHTML += `
+                <div class="group-card bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
+                    <div class="bg-${color}-50 px-5 py-4 border-b border-${color}-100 flex justify-between items-center">
+                        <span class="font-bold text-${color}-700 text-lg">${grp}</span>
+                        <span class="bg-white text-${color}-600 text-xs font-bold px-2 py-1 rounded border border-${color}-100">Group</span>
+                    </div>
+                    <div class="p-5 grid grid-cols-3 gap-4 text-center">
+                        <div><p class="text-[10px] text-slate-400 font-bold uppercase">Sales</p><p class="font-bold text-slate-800 text-lg">${cur.format(d.sum)}</p></div>
+                        <div class="border-l border-r border-slate-100"><p class="text-[10px] text-slate-400 font-bold uppercase">Sheets</p><p class="font-bold text-slate-800 text-lg">${num.format(d.qty)}</p></div>
+                        <div><p class="text-[10px] text-slate-400 font-bold uppercase">Avg</p><p class="font-bold text-slate-800 text-lg">${cur.format(d.qty ? d.sum/d.qty : 0)}</p></div>
+                    </div>
+                </div>`;
+            });
+
+            fillModalTable('modalProdBody', globalProd, cur);
+            fillModalTable('modalBranchBody', globalBranch, cur);
+        }
+
+        function renderCharts(daily, weekly) {
+            // 1. Trend Chart
+            const sortedDates = Object.keys(daily).sort();
+            const trendData = sortedDates.map(d => daily[d]);
+            if(charts.trend) charts.trend.destroy();
+            charts.trend = new Chart(document.getElementById('salesTrendChart'), {
+                type: 'bar',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{ label: 'Sales', data: trendData, backgroundColor: '#4f46e5', borderRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 2. Weekly Chart (Mon-Sun)
+            const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            const dayMap = [1, 2, 3, 4, 5, 6, 0];
+            const weekData = dayMap.map(i => weekly[i]);
+            if(charts.weekly) charts.weekly.destroy();
+            charts.weekly = new Chart(document.getElementById('weeklySalesChart'), {
+                type: 'bar',
+                data: {
+                    labels: dayLabels,
+                    datasets: [{ label: 'Sales', data: weekData, backgroundColor: '#10b981', borderRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        function getGroup(b) {
-            b = (b||"").toUpperCase();
-            if(b.includes('MOSHI') || b.includes('MS')) return 'Moshi';
-            if(b.includes('B2S')) return 'B2S';
+        function getGroup(branch) {
+            const b = (branch || "").toUpperCase();
+            if (b.includes('MOSHI') || b.includes('MS')) return 'Moshi';
+            if (b.includes('B2S')) return 'B2S';
             return 'Wanyen';
         }
 
-        // UTILS
-        window.setRange = (m) => {
-            const d = new Date();
-            let s, e;
-            if(m === '1d') { s=e=d.toISOString().split('T')[0]; }
-            if(m === '1m') {
-                s = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0];
-                e = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().split('T')[0];
+        function fillModalTable(id, obj, cur) {
+            const html = Object.entries(obj).sort((a,b) => b[1]-a[1]).map(([k,v], i) => 
+                `<tr class="hover:bg-slate-50"><td class="p-2 text-slate-400">${i+1}</td><td class="p-2">${k}</td><td class="p-2 text-right font-mono">${cur.format(v)}</td></tr>`
+            ).join('');
+            document.getElementById(id).innerHTML = html;
+        }
+
+        // --- FILTERS ---
+        function initYearPicker() {
+            const sel = document.getElementById('dashYearPicker');
+            const yr = new Date().getFullYear();
+            for (let i=yr; i>=yr-5; i--) {
+                let opt = document.createElement('option'); opt.value=i; opt.innerText=i; sel.appendChild(opt);
             }
-            document.getElementById('dashStart').value = s;
-            document.getElementById('dashEnd').value = e;
-            fetchDataAndRender();
+        }
+
+        window.filterDash7Days = () => {
+            const e = new Date(); const s = new Date(); s.setDate(e.getDate()-6);
+            setDash(s,e);
+        };
+        window.filterDashMonth = (m) => {
+            if(!m) return;
+            const [y, mo] = m.split('-');
+            const s = new Date(y, mo-1, 1); const e = new Date(y, mo, 0);
+            setDash(s,e);
+        };
+        window.filterDashYear = (y) => {
+            if(!y) return;
+            const s = new Date(y, 0, 1); const e = new Date(y, 11, 31);
+            setDash(s,e);
         };
 
+        function setDash(s, e) {
+            const fmt = d => d.toISOString().split('T')[0];
+            document.getElementById('dashStart').value = fmt(s);
+            document.getElementById('dashEnd').value = fmt(e);
+            fetchDataAndRender();
+        }
+
+        window.toggleRankingModal = () => {
+            const modal = document.getElementById('rankingModal');
+            modal.classList.toggle('opacity-0');
+            modal.classList.toggle('pointer-events-none');
+            const content = document.getElementById('modalContent');
+            content.classList.toggle('scale-95'); content.classList.toggle('scale-100');
+            document.body.classList.toggle('modal-active');
+        };
+
+        // --- COMPARE ---
+        window.renderCompare = async () => {
+            const sA = document.getElementById('compStartA').value;
+            const eA = document.getElementById('compEndA').value;
+            const sB = document.getElementById('compStartB').value;
+            const eB = document.getElementById('compEndB').value;
+
+            if(!sA || !eA || !sB || !eB) return alert("Select dates");
+
+            const dataA = await fetchData(sA, eA);
+            const dataB = await fetchData(sB, eB);
+
+            const calc = (d) => d.reduce((acc, r) => ({s: acc.s + (Number(r.total_amount)||0), q: acc.q + (Number(r.quantity)||0)}), {s:0, q:0});
+            const rA = calc(dataA); const rB = calc(dataB);
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
+            const num = new Intl.NumberFormat('en-US');
+
+            document.getElementById('compValA').innerText = cur.format(rA.s);
+            document.getElementById('compQtyA').innerText = num.format(rA.q);
+            document.getElementById('compValB').innerText = cur.format(rB.s);
+            document.getElementById('compQtyB').innerText = num.format(rB.q);
+
+            if(charts.compare) charts.compare.destroy();
+            const ctx = document.getElementById('compareChart').getContext('2d');
+            charts.compare = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Total Sales', 'Total Quantity'],
+                    datasets: [
+                        { label: 'Period A', data: [rA.s, rA.q], backgroundColor: '#3b82f6', borderRadius: 6 },
+                        { label: 'Period B', data: [rB.s, rB.q], backgroundColor: '#f97316', borderRadius: 6 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
+            });
+        };
+
+        // --- P&L ---
+        async function loadPnLMonth() {
+            const m = document.getElementById('pnlMonth').value;
+            if(!m) return;
+            const [y, mo] = m.split('-');
+            const start = `${y}-${mo}-01`;
+            const end = new Date(y, mo, 0).toISOString().split('T')[0];
+            const data = await fetchData(start, end);
+            renderPnLTable(data, m);
+        }
+
+        function renderPnLTable(data, monthStr) {
+            const container = document.getElementById('pnlContainer');
+            container.innerHTML = '';
+            if(!data.length) { container.innerHTML = '<p class="text-center text-gray-500">No data</p>'; return; }
+
+            const report = {};
+            data.forEach(r => {
+                const g = getGroup(r.branch_name);
+                const b = r.branch_name || "Unknown";
+                if(!report[g]) report[g] = {};
+                if(!report[g][b]) report[g][b] = 0;
+                report[g][b] += (Number(r.total_amount)||0);
+            });
+
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
+
+            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
+                if(!report[grp]) return;
+                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
+                let rows = '';
+                let total = 0;
+
+                Object.entries(report[grp]).forEach(([br, sales]) => {
+                    total += sales;
+                    const key = `COST_${monthStr}_${br}`;
+                    const cost = localStorage.getItem(key) || 0;
+                    const profit = sales - cost;
+                    const pColor = profit >= 0 ? 'text-emerald-600' : 'text-red-600';
+                    rows += `<tr class="border-b hover:bg-slate-50"><td class="py-3 px-6 text-sm">${br}</td><td class="py-3 px-6 text-right font-mono">${cur.format(sales)}</td><td class="py-3 px-6 text-right"><input type="number" value="${cost}" class="border rounded px-2 py-1 text-right w-28 text-sm" onchange="updateCost('${key}', this.value, ${sales}, this)"></td><td class="py-3 px-6 text-right font-mono font-bold ${pColor} profit-cell">${cur.format(profit)}</td></tr>`;
+                });
+
+                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm"><div class="bg-${color}-50 px-6 py-4 border-b border-${color}-100 flex justify-between font-bold text-${color}-800"><span>${grp} Group</span><span>Total: ${cur.format(total)}</span></div><table class="w-full"><tbody>${rows}</tbody></table></div>`;
+            });
+        }
+
+        window.updateCost = (key, val, sales, el) => {
+            localStorage.setItem(key, val);
+            const profit = sales - val;
+            const cell = el.closest('tr').querySelector('.profit-cell');
+            cell.innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'}).format(profit);
+            cell.className = `py-3 px-6 text-right font-mono font-bold profit-cell ${profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+        };
+
+        // --- UTILS ---
         window.switchTab = (t) => {
             ['dashboard', 'compare', 'pnl'].forEach(x => document.getElementById(`view-${x}`).classList.add('hidden'));
             document.getElementById(`view-${t}`).classList.remove('hidden');
             if(t==='pnl') loadPnLMonth();
         };
 
-        // SETUP LISTENERS
         function setupEventListeners() {
+            // Import logic same as V.17
             document.getElementById('globalImportBtn').onclick = () => document.getElementById('globalCsvInput').click();
             document.getElementById('globalCsvInput').onchange = async (e) => {
                 const files = e.target.files;
                 if(!files.length) return;
                 showLoading(true, "Uploading...");
-                const bar = document.getElementById('uploadBar');
+                const bar = document.getElementById('progressBar');
                 document.getElementById('uploadProgress').classList.remove('hidden');
                 
                 for(let i=0; i<files.length; i++) {
@@ -339,9 +730,6 @@
                 branch_name: (row[14]||"").trim()
             };
         }
-
-        // P&L, Compare functions skipped for brevity (same logic as before)
-        // Add them here if needed from previous versions.
     </script>
 </body>
 </html>
