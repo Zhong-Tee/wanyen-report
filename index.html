@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.13 (Timezone Fixed)</title>
+    <title>SalesPulse V.15 (Duplicate File Protection)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,8 +14,6 @@
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .group-card { transition: all 0.2s; }
-        .group-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
@@ -24,11 +22,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <div>
                     <h1 class="text-xl font-bold text-slate-900">SalesPulse</h1>
-                    <p class="text-[10px] text-slate-500 uppercase tracking-widest">V.13 Correct Date & Time</p>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-widest">V.15 Smart Protection</p>
                 </div>
             </div>
             <div class="flex items-center gap-4">
@@ -44,22 +42,22 @@
 
     <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
         
-        <!-- 1. MULTI-FILE IMPORT -->
+        <!-- 1. IMPORT -->
         <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h2 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
                 1. Import Data
             </h2>
             <div class="flex gap-4 items-center">
                 <input type="file" id="csvFileInput" accept=".csv" multiple class="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700 border rounded-lg cursor-pointer">
-                <button id="importBtn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-all shadow-sm" disabled>Upload</button>
+                <button id="importBtn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium transition-all shadow-sm" disabled>Check & Upload</button>
             </div>
             <div id="progressBox" class="hidden mt-4">
-                <div class="flex justify-between text-xs text-slate-500 mb-1"><span id="currentFileText">Processing...</span><span id="progressText">0%</span></div>
+                <div class="flex justify-between text-xs text-slate-500 mb-1"><span id="currentFileText">Checking...</span><span id="progressText">0%</span></div>
                 <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden"><div id="progressBar" class="bg-indigo-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div></div>
             </div>
         </section>
 
-        <!-- 2. LOAD & FILTER -->
+        <!-- 2. FILTER -->
         <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="font-bold text-slate-900">2. Filter Data</h2>
@@ -80,7 +78,7 @@
             </div>
         </section>
 
-        <!-- 3. MAIN DASHBOARD -->
+        <!-- 3. DASHBOARD -->
         <div id="dashboard" class="space-y-8 opacity-50 pointer-events-none transition-opacity duration-500">
             
             <!-- Global KPIs -->
@@ -187,6 +185,7 @@
         const SUPABASE_URL = 'https://lgaobgxeybmlrbsjgnfh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYW9iZ3hleWJtbHJic2pnbmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Nzk1OTYsImV4cCI6MjA4MDM1NTU5Nn0.rmGercp5u829OkeqzDq9R2wlR7lA3b2P4po2CZTXOZM';
         const TABLE = 'sales_records';
+        const LOG_TABLE = 'upload_logs';
 
         let supabase, GLOBAL_DATA = [], charts = {};
 
@@ -215,7 +214,7 @@
             }
         }
 
-        // --- 1. IMPORT LOGIC (FIXED TIMEZONE) ---
+        // --- 1. IMPORT LOGIC (WITH FILE CHECK) ---
         document.getElementById('importBtn').onclick = async () => {
             const files = document.getElementById('csvFileInput').files;
             if(!files.length) return alert("Select files");
@@ -225,7 +224,22 @@
 
             for(let i=0; i<files.length; i++) {
                 const file = files[i];
-                document.getElementById('currentFileText').innerText = `Processing: ${file.name}`;
+                const fileName = file.name;
+                document.getElementById('currentFileText').innerText = `Checking: ${fileName}...`;
+
+                // 1.1 Check if file already uploaded
+                const { data: existing } = await supabase.from(LOG_TABLE).select('*').eq('filename', fileName).single();
+                
+                if (existing) {
+                    const confirmUpload = confirm(`⚠️ Warning: File "${fileName}" was already uploaded on ${new Date(existing.uploaded_at).toLocaleDateString()}.\n\nDo you want to upload it again? (Duplicates may occur if you don't reset DB)`);
+                    if (!confirmUpload) {
+                        document.getElementById('currentFileText').innerText = `Skipped: ${fileName}`;
+                        continue; // Skip this file
+                    }
+                }
+
+                // 1.2 Process File
+                document.getElementById('currentFileText').innerText = `Processing: ${fileName}...`;
                 await new Promise(resolve => {
                     Papa.parse(file, {
                         header: false, skipEmptyLines: true,
@@ -234,11 +248,16 @@
                             if(rows.length) {
                                 const batch = 500;
                                 for(let j=0; j<Math.ceil(rows.length/batch); j++) {
-                                    await supabase.from(TABLE).upsert(rows.slice(j*batch, (j+1)*batch), { onConflict: 'transaction_date, transaction_time, branch_name, product, total_amount', ignoreDuplicates: true });
+                                    await supabase.from(TABLE).insert(rows.slice(j*batch, (j+1)*batch));
                                     const pct = Math.round(((j+1)/(rows.length/batch))*100);
                                     document.getElementById('progressBar').style.width = pct+"%";
                                     document.getElementById('progressText').innerText = pct+"%";
                                 }
+                                // 1.3 Log the upload
+                                await supabase.from(LOG_TABLE).insert({ 
+                                    filename: fileName, 
+                                    total_rows: rows.length 
+                                });
                             }
                             resolve();
                         }
@@ -246,7 +265,7 @@
                 });
             }
             
-            alert("Import Complete!");
+            alert("Batch Process Complete!");
             GLOBAL_DATA = []; loadAllDataAndFilter();
             btn.disabled = false;
             setTimeout(() => document.getElementById('progressBox').classList.add('hidden'), 2000);
@@ -254,37 +273,27 @@
 
         function transform(row) {
             if(row.length < 11) return null;
-            // Row[1] is "6/11/2568 7:53:45"
             const dateTimeStr = (row[1]||"").trim();
             const [datePart, timePart] = dateTimeStr.split(" ");
-            
             if(!datePart) return null;
-            
             const dSplit = datePart.split("/");
             if(dSplit.length !== 3) return null;
             
             let day = dSplit[0].padStart(2, '0');
             let month = dSplit[1].padStart(2, '0');
             let year = parseInt(dSplit[2]);
-            if(year > 2400) year -= 543; // 2568 -> 2025
+            if(year > 2400) year -= 543; 
             
-            // 1. FORCE DATE STRING (No Timezone Shift)
-            const isoDate = `${year}-${month}-${day}`; // "2025-11-06"
-
-            // 2. FIX TIME
+            const isoDate = `${year}-${month}-${day}`;
             let timeStr = timePart || "00:00:00";
-            // Fix cases like "8:0:17" -> "08:00:17"
             timeStr = timeStr.split(':').map(t => t.padStart(2, '0')).join(':');
-
-            // 3. Create Timestamp for Sorting (Doesn't affect Date filtering anymore)
-            const timestampStr = `${isoDate}T${timeStr}`; // ISO String format for DB
-
+            const timestampStr = `${isoDate}T${timeStr}`;
             const qty = parseInt(row[9]||0);
             const total = parseFloat((row[10]||"0").replace(/,/g, ""));
 
             return {
-                timestamp: new Date(timestampStr).toISOString(), // Supabase needs ISO
-                transaction_date: isoDate, // STORE AS TEXT "2025-11-06" (Exact)
+                timestamp: new Date(timestampStr).toISOString(),
+                transaction_date: isoDate,
                 transaction_time: timeStr,
                 product: (row[3]||"").trim(),
                 quantity: qty,
@@ -314,7 +323,6 @@
                 GLOBAL_DATA = allRows;
                 document.getElementById('recordCountDisplay').innerText = `Records: ${GLOBAL_DATA.length}`;
                 
-                // AUTO DATE
                 if(GLOBAL_DATA.length > 0) {
                     const dates = GLOBAL_DATA.map(r => r.transaction_date).sort();
                     document.getElementById('startDate').value = dates[0];
@@ -386,7 +394,6 @@
                 document.getElementById(prefix+'BranchTable').innerHTML = mkTable(g.branch);
             });
             
-            // Raw Data
             document.getElementById('rawDataTableBody').innerHTML = data.slice(0,50).map(r => 
                 `<tr class="border-b hover:bg-slate-50"><td class="p-3">${r.transaction_date} ${r.transaction_time}</td><td class="p-3 truncate max-w-[150px]">${r.product}</td><td class="p-3 truncate max-w-[150px]">${r.branch_name}</td><td class="p-3 text-right">${r.quantity}</td><td class="p-3 text-right font-mono">${cur.format(r.total_amount)}</td></tr>`
             ).join('');
@@ -422,6 +429,8 @@
         document.getElementById('clearDataBtn').onclick = async () => {
             if(!confirm("DELETE ALL DATA?")) return;
             await supabase.from(TABLE).delete().neq('id', 0);
+            // Also clear logs
+            await supabase.from(LOG_TABLE).delete().neq('id', 0);
             GLOBAL_DATA = []; loadAllDataAndFilter();
             alert("Cleared");
         };
