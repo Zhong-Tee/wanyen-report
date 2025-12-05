@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.36 (Smart ID Matching)</title>
+    <title>SalesPulse V.35 (Real-time Stock)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -151,7 +151,7 @@
             <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div>
                     <h2 class="text-3xl font-bold text-slate-900">Service Planning</h2>
-                    <p class="text-sm text-slate-500 mt-1">Real-time stock analysis matching by Branch ID.</p>
+                    <p class="text-sm text-slate-500 mt-1">Real-time stock analysis from database compared with average sales.</p>
                 </div>
                 <button onclick="loadServicePlanning()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-indigo-700 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -183,7 +183,7 @@
         const TABLE = 'sales_records';
         const LOG_TABLE = 'upload_logs';
         const COST_TABLE = 'branch_costs';
-        const STOCK_TABLE = 'current_stocks';
+        const STOCK_TABLE = 'current_stocks'; // NEW
         const MAX_FETCH = 300000; 
 
         let supabase, GLOBAL_DATA = [], charts = {};
@@ -343,7 +343,7 @@
         window.filterDashByYear = (y) => { if(!y) return; setDash(`${y}-01-01`, `${y}-12-31`); };
         function setDash(s,e) { document.getElementById('dashStart').value=s; document.getElementById('dashEnd').value=e; fetchDataAndRender(); }
 
-        // --- BRANCH VIEW ---
+        // --- BRANCH VIEW (FIXED BADGE) ---
         function renderBranchView() {
             const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
             const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e);
@@ -374,7 +374,7 @@
             if(!error) { BRANCH_COSTS_CACHE = {}; data.forEach(c => BRANCH_COSTS_CACHE[c.branch_name] = {rent: c.rent, gp: c.gp_percent}); }
         }
 
-        // --- COST SETTINGS ---
+        // --- COST SETTINGS (FIXED HEIGHT) ---
         function renderCostSettings() {
             const branches = new Set(); GLOBAL_DATA.forEach(r => branches.add(r.branch_name || "Unknown"));
             const container = document.getElementById('costContainer'); container.innerHTML = '';
@@ -390,7 +390,7 @@
         window.saveCostCloud = async (br, type, val) => { const current = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0}; if(type === 'rent') current.rent = Number(val); if(type === 'gp') current.gp = Number(val); BRANCH_COSTS_CACHE[br] = current; await supabase.from(COST_TABLE).upsert({ branch_name: br, rent: current.rent, gp_percent: current.gp }, { onConflict: 'branch_name' }); };
         window.deleteCostCloud = async (br) => { if(!confirm("Reset?")) return; delete BRANCH_COSTS_CACHE[br]; renderCostSettings(); await supabase.from(COST_TABLE).delete().eq('branch_name', br); };
 
-        // --- COMPARE ---
+        // --- COMPARE (REVAMPED TO LINE CHART + DROPDOWN) ---
         window.setCompMonth = (period, val) => {
             if(!val) return;
             const [y, m] = val.split('-');
@@ -421,6 +421,7 @@
             document.getElementById('compValB').innerText = cur.format(rB.s); 
             document.getElementById('compQtyB').innerText = num.format(rB.q);
             
+            // --- DAILY DATA LOGIC FOR LINE CHART ---
             const mapDaily = (data) => {
                 const map = {};
                 data.forEach(r => {
@@ -526,10 +527,10 @@
                     const gpDed = d.s * (setting.gp / 100);
                     const profit = d.s - setting.rent - gpDed;
 
+                    // FIXED: Removed formula display from Rent column as requested
                     const gpDedDisplay = gpDed > 0 ? ` <span class="text-xs text-red-500 ml-1">(-${cur.format(gpDed)})</span>` : '';
-                    const rentDedDisplay = setting.rent > 0 ? ` <span class="text-xs text-slate-500 ml-1">(${cur.format(d.s - setting.rent)})</span>` : '';
 
-                    rows += `<tr class="border-b hover:bg-slate-50 text-sm"><td class="py-2 px-4">${br}</td><td class="text-right font-mono">${cur.format(d.s)}</td><td class="text-right font-mono text-blue-600">${num.format(d.q)}</td><td class="text-right text-slate-500">${cur.format(setting.rent)}${rentDedDisplay}</td><td class="text-right text-slate-500">${setting.gp}%${gpDedDisplay}</td><td class="text-right font-bold font-mono ${profit>=0?'text-emerald-600':'text-red-600'} px-4">${cur.format(profit)}</td></tr>`;
+                    rows += `<tr class="border-b hover:bg-slate-50 text-sm"><td class="py-2 px-4">${br}</td><td class="text-right font-mono">${cur.format(d.s)}</td><td class="text-right font-mono text-blue-600">${num.format(d.q)}</td><td class="text-right text-slate-500">${cur.format(setting.rent)}</td><td class="text-right text-slate-500">${setting.gp}%${gpDedDisplay}</td><td class="text-right font-bold font-mono ${profit>=0?'text-emerald-600':'text-red-600'} px-4">${cur.format(profit)}</td></tr>`;
                 });
                 container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 mb-6 overflow-hidden"><div class="bg-${color}-50 px-6 py-3 font-bold text-${color}-800"><span>${grp} Group</span></div><table class="w-full"><thead><tr class="text-xs bg-slate-50 text-slate-500"><th class="text-left px-4 py-2">Branch</th><th class="text-right px-4">Sales</th><th class="text-right px-4">Qty</th><th class="text-right px-4">Rent</th><th class="text-right px-4">GP% (Deduction)</th><th class="text-right px-4">Net</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             });
@@ -559,11 +560,11 @@
             link.click();
         };
 
-        // --- NEW: SERVICE PLANNING (SMART ID MATCHING) ---
+        // --- NEW: SERVICE PLANNING (Real-time Supabase) ---
         async function loadServicePlanning() {
             showLoading(true, "Analyzing Stock...");
             
-            // 1. Calculate Average Sales from GLOBAL_DATA
+            // 1. Calculate Average Sales from GLOBAL_DATA (sales_records)
             const start = new Date(document.getElementById('dashStart').value);
             const end = new Date(document.getElementById('dashEnd').value);
             let countWD = 0, countWE = 0;
@@ -575,27 +576,23 @@
             if(countWE === 0) countWE = 1;
 
             const runRates = {}; 
-            
-            // Helper function to extract Branch ID (e.g., "111" from "111 MS ...")
-            const getBranchId = (name) => {
-                const match = (name || "").match(/^\d+/);
-                return match ? match[0] : (name || "").toUpperCase().trim();
-            };
+            // Normalize helper
+            const normalize = (str) => (str || "").trim().toUpperCase().replace(/\s+/g, ' ');
 
             GLOBAL_DATA.forEach(r => {
-                const brId = getBranchId(r.branch_name);
+                const br = normalize(r.branch_name);
                 const isInk = (r.product || "").toUpperCase().includes("RIBBON");
                 const type = isInk ? "INK" : "PAPER";
                 const day = new Date(r.timestamp).getDay();
                 const isWE = (day === 0 || day === 6);
                 
-                if (!runRates[brId]) runRates[brId] = { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
+                if (!runRates[br]) runRates[br] = { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
                 
-                if (isWE) runRates[brId][type].we += Number(r.quantity);
-                else runRates[brId][type].wd += Number(r.quantity);
+                if (isWE) runRates[br][type].we += Number(r.quantity);
+                else runRates[br][type].wd += Number(r.quantity);
             });
 
-            // 2. Fetch Stock from Supabase
+            // 2. Fetch Stock from Supabase (current_stocks)
             const { data: stockRows, error } = await supabase.from(STOCK_TABLE).select('*');
             
             if (error) {
@@ -603,20 +600,19 @@
                 return alert("Error fetching stock: " + error.message);
             }
 
-            const stockData = {}; // BranchID -> {Name, INK: qty, PAPER: qty}
+            const stockData = {}; // Branch -> {INK: qty, PAPER: qty}
             stockRows.forEach(row => {
-                const brId = getBranchId(row.branch_name);
+                const br = normalize(row.branch_name);
                 const prod = (row.product_name || "").toUpperCase();
                 const qty = Number(row.quantity || 0);
                 const isInk = prod.includes("RIBBON") || prod.includes("INK");
                 const type = isInk ? "INK" : "PAPER";
 
-                if (!stockData[brId]) stockData[brId] = { name: row.branch_name, INK: 0, PAPER: 0 };
-                stockData[brId][type] += qty;
+                if (!stockData[br]) stockData[br] = { INK: 0, PAPER: 0 };
+                stockData[br][type] += qty;
             });
 
-            // 3. Match Logic using Branch ID
-            renderPlanningTable(runRates, stockData, daysWD, daysWE);
+            renderPlanningTable(runRates, stockData, countWD, countWE);
             showLoading(false);
         }
 
@@ -624,60 +620,59 @@
             const container = document.getElementById('planningContainer');
             container.innerHTML = '';
 
-            // Use IDs from Stock as base (because that's what we are planning for)
-            const branchIds = Object.keys(stockData);
+            const branches = new Set([...Object.keys(runRates), ...Object.keys(stockData)]);
             const num = new Intl.NumberFormat('en-US', {maximumFractionDigits: 1});
 
-            // Organize by Group (Moshi, B2S, Wanyen) based on the Branch Name from Stock
-            const groupedData = {'Moshi': [], 'B2S': [], 'Wanyen': []};
-
-            branchIds.forEach(id => {
-                const data = stockData[id];
-                const group = getGroup(data.name);
-                if (groupedData[group]) groupedData[group].push({ id, ...data });
-            });
-
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
-                const items = groupedData[grp];
-                if (items.length === 0) return;
-
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
+                // Filter branches by group
+                const grpBranches = Array.from(branches).filter(b => getGroup(b) === grp);
+                
+                if (grpBranches.length === 0) return;
+
                 const tableData = [];
 
-                items.forEach(item => {
-                    const sales = runRates[item.id] || { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
+                grpBranches.forEach(br => {
+                    const stock = stockData[br] || { INK: 0, PAPER: 0 };
+                    const sales = runRates[br] || { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
 
                     const calc = (type) => {
                         const s = sales[type];
                         const avgWD = s.wd / daysWD;
                         const avgWE = s.we / daysWE;
+                        // Weighted Avg: ((AvgWD * 5) + (AvgWE * 2)) / 7
                         const weightedAvg = ((avgWD * 5) + (avgWE * 2)) / 7;
-                        const currentStock = item[type];
+                        const currentStock = stock[type];
+                        // Days Left
                         const daysLeft = weightedAvg > 0 ? (currentStock / weightedAvg) : 999;
                         return { type, stock: currentStock, avgWD, avgWE, daysLeft };
                     };
 
-                    tableData.push({ branch: item.name, ...calc('PAPER') });
-                    tableData.push({ branch: item.name, ...calc('INK') });
+                    tableData.push({ branch: br, ...calc('PAPER') });
+                    tableData.push({ branch: br, ...calc('INK') });
                 });
 
-                // Sort by Days Left
+                // SORTING: Critical (lowest days left) first
                 tableData.sort((a,b) => a.daysLeft - b.daysLeft);
 
                 let rows = '';
-                tableData.forEach(rowItem => {
-                    const isCrit = rowItem.daysLeft < 7;
-                    const isWarn = rowItem.daysLeft >= 7 && rowItem.daysLeft < 14;
+                tableData.forEach(item => {
+                    const isCrit = item.daysLeft < 7;
+                    const isWarn = item.daysLeft >= 7 && item.daysLeft < 14;
                     const styleClass = isCrit ? 'stock-critical' : (isWarn ? 'stock-warning' : 'stock-good');
-                    const dayText = rowItem.daysLeft > 365 ? '> 1 Year' : rowItem.daysLeft.toFixed(1) + ' Days';
-
+                    
+                    const dayText = item.daysLeft > 365 ? '> 1 Year' : item.daysLeft.toFixed(1) + ' Days';
+                    
+                    // Branch Name Display (Original casing recovery is hard due to normalization, using stored key)
+                    // We normalized keys, so display is normalized. 
+                    
                     rows += `
                         <tr class="border-b hover:bg-slate-50 text-xs">
-                            <td class="px-4 py-2 font-medium text-slate-700">${rowItem.branch}</td>
-                            <td class="px-4 py-2 text-slate-500">${rowItem.type}</td>
-                            <td class="px-4 py-2 text-right font-mono text-slate-800">${num.format(rowItem.stock)}</td>
-                            <td class="px-4 py-2 text-right font-mono text-blue-600">${num.format(rowItem.avgWD)}</td>
-                            <td class="px-4 py-2 text-right font-mono text-orange-600">${num.format(rowItem.avgWE)}</td>
+                            <td class="px-4 py-2 font-medium text-slate-700">${item.branch}</td>
+                            <td class="px-4 py-2 text-slate-500">${item.type}</td>
+                            <td class="px-4 py-2 text-right font-mono text-slate-800">${num.format(item.stock)}</td>
+                            <td class="px-4 py-2 text-right font-mono text-blue-600">${num.format(item.avgWD)}</td>
+                            <td class="px-4 py-2 text-right font-mono text-orange-600">${num.format(item.avgWE)}</td>
                             <td class="px-4 py-2 text-center font-mono text-xs rounded border ${styleClass}">${dayText}</td>
                         </tr>
                     `;
