@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.24 (Secure & Clean Charts)</title>
+    <title>SalesPulse V.25 (Branch Intelligence)</title>
     
-    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -19,8 +18,8 @@
         .nav-item.active { background-color: #e0e7ff; color: #4338ca; border-right: 3px solid #4338ca; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .modal { transition: opacity 0.25s ease; }
-        body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
+        .modal { transition: opacity 0.2s ease; }
+        body.modal-active { overflow: hidden; }
         #loadingOverlay { backdrop-filter: blur(2px); background: rgba(255,255,255,0.8); }
     </style>
 </head>
@@ -36,9 +35,19 @@
         </div>
 
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors active">Dashboard</button>
-            <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Sales Compare</button>
-            <button onclick="switchTab('pnl')" id="nav-pnl" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Profit & Loss</button>
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors active">
+                Dashboard
+            </button>
+            <!-- NEW MENU -->
+            <button onclick="switchTab('branch')" id="nav-branch" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                Branch Analysis
+            </button>
+            <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                Sales Compare
+            </button>
+            <button onclick="switchTab('pnl')" id="nav-pnl" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                Profit & Loss
+            </button>
         </nav>
 
         <div class="p-4 border-t border-slate-100 bg-slate-50">
@@ -48,10 +57,9 @@
             <div class="flex flex-col gap-2">
                 <input type="file" id="globalCsvInput" accept=".csv" multiple class="hidden">
                 <button id="globalImportBtn" class="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs py-2.5 rounded shadow-sm transition-colors font-semibold">📥 Upload CSV</button>
-                
                 <div class="flex gap-2">
-                    <button id="deleteByFileBtn" class="flex-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded text-xs py-2 font-semibold transition-colors">Del File</button>
-                    <button id="globalResetBtn" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-xs py-2 font-semibold transition-colors">Reset DB</button>
+                    <button id="deleteByFileBtn" class="flex-1 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded text-xs py-2 font-semibold">Del File</button>
+                    <button id="globalResetBtn" class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded text-xs py-2 font-semibold">Reset DB</button>
                 </div>
                 <input type="file" id="deleteFileInput" accept=".csv" class="hidden">
             </div>
@@ -62,74 +70,90 @@
     <!-- MAIN CONTENT -->
     <main class="flex-1 overflow-y-auto bg-white p-8 relative">
         
-        <!-- LOADING -->
         <div id="loadingOverlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center hidden">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
             <p id="loadingText" class="text-indigo-800 font-semibold bg-indigo-50 px-4 py-2 rounded-lg shadow-sm">Loading...</p>
         </div>
 
-        <!-- VIEW 1: DASHBOARD -->
+        <!-- 1. DASHBOARD -->
         <div id="view-dashboard" class="fade-in space-y-8">
             <div class="flex flex-col xl:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div>
                     <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Dashboard</h2>
-                    <p class="text-sm text-slate-500 mt-1">Showing: <span id="currentRangeText" class="font-bold text-indigo-600">...</span></p>
+                    <p class="text-sm text-slate-500 mt-1">
+                        Showing: <span id="currentRangeText" class="font-bold text-indigo-600">...</span>
+                        <span id="recordCountDisplay" class="ml-2 font-mono bg-slate-100 px-2 py-0.5 rounded text-xs text-slate-500">0 rows</span>
+                    </p>
                 </div>
+                
                 <div class="flex flex-wrap gap-3 items-center bg-slate-50 p-2 rounded-lg border border-slate-200 shadow-sm">
                     <div class="flex items-center gap-2">
-                        <input type="date" id="dashStart" class="text-sm border p-1.5 rounded">
+                        <input type="date" id="dashStart" class="text-sm border p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500">
                         <span class="text-slate-400">-</span>
-                        <input type="date" id="dashEnd" class="text-sm border p-1.5 rounded">
-                        <button onclick="fetchDataAndRender()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm">Go</button>
+                        <input type="date" id="dashEnd" class="text-sm border p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500">
+                        <button onclick="fetchDataAndRender()" class="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm hover:bg-indigo-700">Go</button>
                     </div>
                     <div class="w-px h-6 bg-slate-300 mx-1 hidden md:block"></div>
                     <button onclick="filterDash7Days()" class="px-3 py-1.5 bg-white border rounded text-sm hover:bg-indigo-50">7 Days</button>
-                    <input type="month" id="filterMonthInput" onchange="filterDashByMonth(this.value)" class="px-2 py-1.5 border rounded text-sm bg-white cursor-pointer">
-                    <select id="filterYearInput" onchange="filterDashByYear(this.value)" class="px-2 py-1.5 border rounded text-sm bg-white cursor-pointer"><option value="">Year</option></select>
+                    <input type="month" onchange="filterDashByMonth(this.value)" class="px-2 py-1.5 border rounded text-sm bg-white">
+                    <select id="dashYearPicker" onchange="filterDashByYear(this.value)" class="px-2 py-1.5 border rounded text-sm bg-white"><option value="">Year</option></select>
                 </div>
             </div>
 
-            <!-- Global KPIs -->
+            <!-- KPIs -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><p class="text-sm font-bold text-slate-400 uppercase">Total Sales</p><p class="text-3xl font-black text-slate-800" id="dashSales">0.00</p></div>
                 <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><p class="text-sm font-bold text-slate-400 uppercase">Sheets Sold</p><p class="text-3xl font-black text-slate-800" id="dashQty">0</p></div>
                 <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><p class="text-sm font-bold text-slate-400 uppercase">Avg / Sheet</p><p class="text-3xl font-black text-slate-800" id="dashAvg">0.00</p></div>
             </div>
 
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Left: Trend (No Labels) -->
+            <!-- Charts -->
+            <div class="space-y-6">
+                <!-- Trend -->
                 <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                    <h3 class="text-lg font-bold text-slate-800 mb-4">Sales Trend</h3>
-                    <div class="h-72 relative w-full"><canvas id="salesTrendChart"></canvas></div>
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Daily Sales Trend</h3>
+                    <div class="h-64 relative w-full"><canvas id="salesTrendChart"></canvas></div>
                 </div>
-                <!-- Right: Weekly (Vertical Table Style) -->
-                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col">
-                    <h3 class="text-lg font-bold text-slate-800 mb-4">Weekly Sales (Mon-Sun)</h3>
-                    <div class="h-48 relative w-full mb-4"><canvas id="weeklySalesChart"></canvas></div>
-                    
-                    <!-- Vertical Table for Weekly Summary -->
-                    <div class="flex-1 overflow-hidden bg-slate-50 rounded-lg border border-slate-200">
-                        <table class="w-full text-sm">
-                            <tbody id="weeklySummaryTable" class="divide-y divide-slate-200">
-                                <!-- Injected via JS -->
-                            </tbody>
-                        </table>
+                
+                <!-- Weekly Sales + Table (New Layout) -->
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Weekly Performance (Mon-Sun)</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 h-64 relative">
+                            <canvas id="weeklySalesChart"></canvas>
+                        </div>
+                        <div class="lg:col-span-1 overflow-y-auto bg-slate-50 rounded-lg border border-slate-200 max-h-64">
+                            <table class="w-full text-sm">
+                                <thead class="bg-slate-100 text-xs uppercase text-slate-500"><tr><th class="px-4 py-2 text-left">Day</th><th class="px-4 py-2 text-right">Sales</th></tr></thead>
+                                <tbody id="weeklySummaryTable" class="divide-y divide-slate-200"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Groups -->
-            <div>
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold text-slate-800">Branch Group Analysis</h3>
-                    <button onclick="toggleRankingModal()" class="text-sm text-indigo-600 font-bold hover:underline">View Full Rankings</button>
+        <!-- 2. BRANCH ANALYSIS (NEW) -->
+        <div id="view-branch" class="hidden fade-in space-y-8">
+             <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Branch Group Analysis</h2>
+                    <p class="text-sm text-slate-500 mt-1">Performance by group and rankings.</p>
                 </div>
-                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="groupCardsContainer"></div>
+                <div class="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm">
+                    <input type="date" id="branchStart" class="text-sm border p-1.5 rounded">
+                    <span class="text-slate-400">-</span>
+                    <input type="date" id="branchEnd" class="text-sm border p-1.5 rounded">
+                    <button onclick="renderBranchView()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-indigo-700">Update</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="branchCardsContainer">
+                <!-- Cards Injected Here -->
             </div>
         </div>
 
-        <!-- VIEW 2: COMPARE -->
+        <!-- 3. COMPARE -->
         <div id="view-compare" class="hidden fade-in space-y-8">
             <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">Sales Comparison</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -148,7 +172,7 @@
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mt-6"><div class="h-96"><canvas id="compareChart"></canvas></div></div>
         </div>
 
-        <!-- VIEW 3: P&L -->
+        <!-- 4. P&L -->
         <div id="view-pnl" class="hidden fade-in space-y-8">
             <div class="flex justify-between items-end border-b border-slate-100 pb-6">
                 <h2 class="text-3xl font-bold text-slate-900">Profit & Loss</h2>
@@ -158,23 +182,30 @@
         </div>
     </main>
 
-    <!-- MODAL -->
+    <!-- MODAL (Generic) -->
     <div id="rankingModal" class="modal opacity-0 pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="toggleRankingModal()"></div>
-        <div class="bg-white w-11/12 md:max-w-5xl h-[85vh] rounded-2xl shadow-2xl z-10 flex flex-col overflow-hidden transform transition-all scale-95" id="modalContent">
-            <div class="flex justify-between items-center px-6 py-4 border-b"><h3 class="font-bold text-xl">Rankings</h3><button onclick="toggleRankingModal()">✕</button></div>
-            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden flex-1">
-                <div class="flex flex-col h-full"><h4 class="font-bold mb-3 text-indigo-600">Top Products</h4><div class="flex-1 overflow-auto border rounded"><table class="w-full text-sm"><tbody id="modalProdBody"></tbody></table></div></div>
-                <div class="flex flex-col h-full"><h4 class="font-bold mb-3 text-indigo-600">Top Branches</h4><div class="flex-1 overflow-auto border rounded"><table class="w-full text-sm"><tbody id="modalBranchBody"></tbody></table></div></div>
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="bg-white w-11/12 md:max-w-4xl h-[80vh] rounded-2xl shadow-2xl z-10 flex flex-col overflow-hidden transform transition-all scale-95" id="modalContent">
+            <div class="flex justify-between items-center px-6 py-4 border-b bg-slate-50">
+                <h3 class="font-bold text-xl text-slate-800" id="modalTitle">Rankings</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 text-2xl">×</button>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden flex-1 bg-white">
+                <div class="flex flex-col h-full border rounded-xl overflow-hidden">
+                    <div class="bg-indigo-50 px-4 py-2 font-bold text-indigo-700 text-sm uppercase">Top 10 Products</div>
+                    <div class="flex-1 overflow-y-auto"><table class="w-full text-sm"><tbody id="modalProdBody" class="divide-y divide-slate-100"></tbody></table></div>
+                </div>
+                <div class="flex flex-col h-full border rounded-xl overflow-hidden">
+                    <div class="bg-emerald-50 px-4 py-2 font-bold text-emerald-700 text-sm uppercase">Top 10 Branches</div>
+                    <div class="flex-1 overflow-y-auto"><table class="w-full text-sm"><tbody id="modalBranchBody" class="divide-y divide-slate-100"></tbody></table></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // REGISTER PLUGINS
         Chart.register(ChartDataLabels);
 
-        // CONFIG
         const SUPABASE_URL = 'https://lgaobgxeybmlrbsjgnfh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnYW9iZ3hleWJtbHJic2pnbmZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Nzk1OTYsImV4cCI6MjA4MDM1NTU5Nn0.rmGercp5u829OkeqzDq9R2wlR7lA3b2P4po2CZTXOZM';
         const TABLE = 'sales_records';
@@ -188,6 +219,8 @@
             const d = new Date().toISOString().split('T')[0];
             document.getElementById('dashStart').value = d;
             document.getElementById('dashEnd').value = d;
+            document.getElementById('branchStart').value = d;
+            document.getElementById('branchEnd').value = d;
             document.getElementById('pnlMonth').value = d.slice(0, 7);
 
             try {
@@ -205,8 +238,7 @@
 
         function updateStatus(connected, msg) {
             const el = document.getElementById('dbStatus');
-            const color = connected ? 'bg-green-500' : 'bg-red-500';
-            el.innerHTML = `<div class="w-2 h-2 rounded-full ${color}"></div> ${connected ? 'Connected ('+msg+')' : 'Error: '+msg}`;
+            el.innerHTML = `<div class="w-2 h-2 rounded-full ${connected?'bg-green-500':'bg-red-500'}"></div> ${connected ? 'Connected ('+msg+')' : 'Error'}`;
         }
 
         function showLoading(show, text="Loading...") {
@@ -215,7 +247,7 @@
             overlay.classList[show?'remove':'add']('hidden');
         }
 
-        // --- FETCH ---
+        // CORE FETCH
         async function fetchData(s, e) {
             showLoading(true, "Fetching...");
             let allRows = [], from = 0, pageSize = 1000, keepFetching = true;
@@ -238,30 +270,28 @@
             const e = document.getElementById('dashEnd').value;
             if(!s || !e) return;
             GLOBAL_DATA = await fetchData(s, e);
+            document.getElementById('recordCountDisplay').innerText = `${GLOBAL_DATA.length} rows`;
             document.getElementById('currentRangeText').innerText = `${s} to ${e}`;
+            
+            // Sync Branch dates if empty
+            document.getElementById('branchStart').value = s;
+            document.getElementById('branchEnd').value = e;
+            
             renderDashboard();
         }
 
-        // --- DASHBOARD ---
+        // --- 1. DASHBOARD ---
         function renderDashboard() {
             let sum=0, qty=0;
-            const groups = {'Moshi': {sum:0, qty:0}, 'B2S': {sum:0, qty:0}, 'Wanyen': {sum:0, qty:0}};
             const dailyStats = {}, weeklyStats = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
-            const globalProd = {}, globalBranch = {};
 
             GLOBAL_DATA.forEach(r => {
                 const v = Number(r.total_amount)||0;
                 const q = Number(r.quantity)||0;
-                const g = getGroup(r.branch_name);
                 sum+=v; qty+=q;
-                groups[g].sum+=v; groups[g].qty+=q;
-
                 dailyStats[r.transaction_date] = (dailyStats[r.transaction_date]||0)+v;
                 const dayIdx = new Date(r.timestamp).getDay();
                 weeklyStats[dayIdx] += v;
-
-                const p = r.product || "?"; const b = r.branch_name || "?";
-                globalProd[p] = (globalProd[p]||0)+v; globalBranch[b] = (globalBranch[b]||0)+v;
             });
 
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
@@ -272,35 +302,21 @@
             document.getElementById('dashAvg').innerText = cur.format(qty ? sum/qty : 0);
 
             renderCharts(dailyStats, weeklyStats);
-
-            const container = document.getElementById('groupCardsContainer');
-            container.innerHTML = '';
-            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
-                const d = groups[grp];
-                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 p-4 shadow-sm"><div class="flex justify-between items-center mb-3 pb-2 border-b border-${color}-100"><span class="font-bold text-${color}-700 text-lg">${grp}</span></div><div class="grid grid-cols-3 gap-2 text-center"><div><p class="text-[10px] text-slate-400 font-bold uppercase">Sales</p><p class="font-bold text-slate-800">${cur.format(d.sum)}</p></div><div class="border-l border-r border-slate-100"><p class="text-[10px] text-slate-400 font-bold uppercase">Sheets</p><p class="font-bold text-slate-800">${num.format(d.qty)}</p></div><div><p class="text-[10px] text-slate-400 font-bold uppercase">Avg</p><p class="font-bold text-slate-800">${cur.format(d.qty ? d.sum/d.qty : 0)}</p></div></div></div>`;
-            });
-
-            fillModalTable('modalProdBody', globalProd, cur);
-            fillModalTable('modalBranchBody', globalBranch, cur);
         }
 
         function renderCharts(daily, weekly) {
             const sortedDates = Object.keys(daily).sort();
             const trendData = sortedDates.map(d => daily[d]);
             
-            // 1. Purple Chart (Clean, No Labels)
+            // 1. Trend Chart (Clean)
             if(charts.trend) charts.trend.destroy();
             charts.trend = new Chart(document.getElementById('salesTrendChart'), {
                 type: 'bar',
                 data: { labels: sortedDates, datasets: [{ label: 'Sales', data: trendData, backgroundColor: '#4f46e5', borderRadius: 4 }] },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: {display:false}, datalabels: { display: false } } // HIDE LABELS
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false}, datalabels: { display: false } } }
             });
 
-            // 2. Green Chart (Labels & Table)
+            // 2. Weekly Chart (Right Side Table Layout)
             const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
             const weekData = [1,2,3,4,5,6,0].map(i => weekly[i]);
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
@@ -308,36 +324,118 @@
             if(charts.weekly) charts.weekly.destroy();
             charts.weekly = new Chart(document.getElementById('weeklySalesChart'), {
                 type: 'bar',
-                data: { labels: dayLabels, datasets: [{ label: 'Sales', data: weekData, backgroundColor: '#10b981', borderRadius: 4 }] },
+                data: { 
+                    labels: dayLabels, 
+                    datasets: [{ label: 'Sales', data: weekData, backgroundColor: '#10b981', borderRadius: 4 }] 
+                },
                 options: { 
                     responsive: true, maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: {display:false},
-                        datalabels: {
-                            anchor: 'end', align: 'top',
-                            formatter: (val) => val >= 1000 ? (val/1000).toFixed(1) + 'k' : val,
-                            font: { weight: 'bold' }, color: '#64748b'
-                        }
-                    },
+                    plugins: { legend: {display:false}, datalabels: { anchor: 'end', align: 'top', formatter: val => val >= 1000 ? (val/1000).toFixed(1)+'k' : val, font: { weight: 'bold' }, color: '#64748b' } },
                     layout: { padding: { top: 20 } }
                 }
             });
 
-            // Vertical Table for Weekly
-            const tableBody = document.getElementById('weeklySummaryTable');
-            tableBody.innerHTML = dayLabels.map((d, i) => 
-                `<tr>
-                    <td class="py-2 px-4 font-medium text-slate-600">${d}</td>
-                    <td class="py-2 px-4 text-right font-mono text-slate-800">${cur.format(weekData[i])}</td>
-                    <td class="py-2 px-4 text-right">
-                        <div class="h-1.5 bg-slate-100 rounded-full w-24 ml-auto">
-                            <div class="h-1.5 bg-green-500 rounded-full" style="width: ${Math.max(...weekData) > 0 ? (weekData[i] / Math.max(...weekData) * 100) : 0}%"></div>
-                        </div>
-                    </td>
-                </tr>`
+            document.getElementById('weeklySummaryTable').innerHTML = dayLabels.map((d, i) => 
+                `<tr class="hover:bg-slate-50"><td class="py-3 px-2 font-medium text-slate-600 border-b border-slate-50">${d}</td><td class="py-3 px-2 text-right font-mono text-slate-800 border-b border-slate-50">${cur.format(weekData[i])}</td></tr>`
             ).join('');
         }
 
+        // --- 2. BRANCH ANALYSIS (NEW) ---
+        function renderBranchView() {
+            const s = document.getElementById('branchStart').value;
+            const e = document.getElementById('branchEnd').value;
+            if(!s || !e) return;
+
+            // Filter Global Data
+            const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e);
+            
+            const groups = {
+                'Moshi': {sum:0, qty:0, branches: new Set(), data: []},
+                'B2S': {sum:0, qty:0, branches: new Set(), data: []},
+                'Wanyen': {sum:0, qty:0, branches: new Set(), data: []}
+            };
+
+            data.forEach(r => {
+                const g = getGroup(r.branch_name);
+                const v = Number(r.total_amount)||0;
+                const q = Number(r.quantity)||0;
+                groups[g].sum += v;
+                groups[g].qty += q;
+                groups[g].branches.add(r.branch_name);
+                groups[g].data.push(r);
+            });
+
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
+            const num = new Intl.NumberFormat('en-US');
+            const container = document.getElementById('branchCardsContainer');
+            container.innerHTML = '';
+
+            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
+                const d = groups[grp];
+                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
+                
+                container.innerHTML += `
+                <div class="bg-white rounded-xl border border-${color}-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                    <div class="bg-${color}-50 px-6 py-4 border-b border-${color}-100 flex justify-between items-center">
+                        <h3 class="font-bold text-${color}-700 text-lg">${grp}</h3>
+                        <span class="bg-white text-${color}-600 text-xs font-bold px-3 py-1 rounded-full border border-${color}-100">${d.branches.size} Branches</span>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-3 gap-4 text-center mb-6">
+                            <div><p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Sales</p><p class="font-bold text-slate-800 text-lg">${cur.format(d.sum)}</p></div>
+                            <div class="border-l border-r border-slate-100"><p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Sheets</p><p class="font-bold text-slate-800 text-lg">${num.format(d.qty)}</p></div>
+                            <div><p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Avg</p><p class="font-bold text-slate-800 text-lg">${cur.format(d.qty ? d.sum/d.qty : 0)}</p></div>
+                        </div>
+                        <button onclick="openGroupModal('${grp}')" class="w-full py-2.5 bg-${color}-50 text-${color}-700 text-sm font-bold rounded-lg hover:bg-${color}-100 transition-colors flex items-center justify-center gap-2">
+                            View Top 10
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        </button>
+                    </div>
+                </div>`;
+            });
+        }
+
+        window.openGroupModal = (grp) => {
+            const s = document.getElementById('branchStart').value;
+            const e = document.getElementById('branchEnd').value;
+            const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e && getGroup(r.branch_name) === grp);
+            
+            const prod = {}, branch = {};
+            data.forEach(r => {
+                const v = Number(r.total_amount)||0;
+                const p = r.product || "?";
+                const b = r.branch_name || "?";
+                prod[p] = (prod[p]||0)+v;
+                branch[b] = (branch[b]||0)+v;
+            });
+
+            document.getElementById('modalTitle').innerText = `${grp} Top 10 Rankings (${s} to ${e})`;
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
+
+            const fill = (id, obj) => {
+                const html = Object.entries(obj).sort((a,b) => b[1]-a[1]).slice(0,10).map(([k,v], i) => 
+                    `<tr class="hover:bg-indigo-50 transition-colors"><td class="p-3 pl-4 text-slate-400 w-10 font-mono">${i+1}</td><td class="p-3 text-slate-700 font-medium truncate max-w-[150px]" title="${k}">${k}</td><td class="p-3 text-right pr-4 font-mono text-slate-800 font-bold">${cur.format(v)}</td></tr>`
+                ).join('');
+                document.getElementById(id).innerHTML = html || '<tr><td colspan="3" class="p-4 text-center text-slate-400">No Data</td></tr>';
+            };
+
+            fill('modalProdBody', prod);
+            fill('modalBranchBody', branch);
+
+            const modal = document.getElementById('rankingModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.getElementById('modalContent').classList.remove('scale-95');
+            document.body.classList.add('modal-active');
+        };
+
+        window.closeModal = () => {
+            const modal = document.getElementById('rankingModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('modalContent').classList.add('scale-95');
+            document.body.classList.remove('modal-active');
+        };
+
+        // --- HELPERS ---
         function getGroup(b) {
             b = (b||"").toUpperCase();
             if(b.includes('MOSHI') || b.includes('MS')) return 'Moshi';
@@ -345,37 +443,18 @@
             return 'Wanyen';
         }
 
-        function fillModalTable(id, obj, cur) {
-            const html = Object.entries(obj).sort((a,b) => b[1]-a[1]).map(([k,v], i) => 
-                `<tr class="hover:bg-slate-50"><td class="p-2 text-slate-400">${i+1}</td><td class="p-2">${k}</td><td class="p-2 text-right font-mono">${cur.format(v)}</td></tr>`
-            ).join('');
-            document.getElementById(id).innerHTML = html;
-        }
-
-        // --- FILTERS ---
         function initYearPicker() {
-            const sel = document.getElementById('filterYearInput');
+            const sel = document.getElementById('dashYearPicker');
             const yr = new Date().getFullYear();
             for (let i=yr; i>=yr-5; i--) {
                 let opt = document.createElement('option'); opt.value=i; opt.innerText=i; sel.appendChild(opt);
             }
         }
 
-        window.filterDash7Days = () => {
-            const e = new Date(); const s = new Date(); s.setDate(e.getDate()-6);
-            setDash(s,e);
-        };
-        window.filterDashByMonth = (m) => {
-            if(!m) return;
-            const [y, mo] = m.split('-');
-            const s = new Date(y, mo-1, 1); const e = new Date(y, mo, 0);
-            setDash(s,e);
-        };
-        window.filterDashByYear = (y) => {
-            if(!y) return;
-            const s = new Date(y, 0, 1); const e = new Date(y, 11, 31);
-            setDash(s,e);
-        };
+        // Dash Filters
+        window.filterDash7Days = () => { const e = new Date(); const s = new Date(); s.setDate(e.getDate()-6); setDash(s,e); };
+        window.filterDashByMonth = (m) => { if(!m) return; const [y, mo] = m.split('-'); setDash(new Date(y, mo-1, 1), new Date(y, mo, 0)); };
+        window.filterDashByYear = (y) => { if(!y) return; setDash(new Date(y, 0, 1), new Date(y, 11, 31)); };
 
         function setDash(s, e) {
             const fmt = d => {
@@ -389,115 +468,33 @@
             fetchDataAndRender();
         }
 
-        window.toggleRankingModal = () => {
-            const m = document.getElementById('rankingModal');
-            const c = document.getElementById('modalContent');
-            m.classList.toggle('opacity-0'); m.classList.toggle('pointer-events-none');
-            c.classList.toggle('scale-95'); c.classList.toggle('scale-100');
-            document.body.classList.toggle('modal-active');
-        };
-
-        // --- COMPARE & PNL ---
-        window.runCompare = async () => {
-            const sA = document.getElementById('compStartA').value;
-            const eA = document.getElementById('compEndA').value;
-            const sB = document.getElementById('compStartB').value;
-            const eB = document.getElementById('compEndB').value;
-            if(!sA || !eA || !sB || !eB) return alert("Select all dates");
-
-            const dataA = await fetchData(sA, eA);
-            const dataB = await fetchData(sB, eB);
-            const calc = (d) => d.reduce((acc, r) => ({s: acc.s + (Number(r.total_amount)||0), q: acc.q + (Number(r.quantity)||0)}), {s:0, q:0});
-            const rA = calc(dataA); const rB = calc(dataB);
-            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
-            const num = new Intl.NumberFormat('en-US');
-
-            document.getElementById('compValA').innerText = cur.format(rA.s);
-            document.getElementById('compQtyA').innerText = num.format(rA.q);
-            document.getElementById('compValB').innerText = cur.format(rB.s);
-            document.getElementById('compQtyB').innerText = num.format(rB.q);
-
-            if(charts.compare) charts.compare.destroy();
-            const ctx = document.getElementById('compareChart').getContext('2d');
-            charts.compare = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Sales', 'Qty'],
-                    datasets: [{ label: 'Period A', data: [rA.s, rA.q], backgroundColor: '#3b82f6' }, { label: 'Period B', data: [rB.s, rB.q], backgroundColor: '#f97316' }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        };
-
-        async function loadPnLMonth() {
-            const m = document.getElementById('pnlMonth').value;
-            if(!m) return;
-            const [y, mo] = m.split('-');
-            const start = `${y}-${mo}-01`;
-            const end = new Date(y, mo, 0).toISOString().split('T')[0];
-            const data = await fetchData(start, end);
-            renderPnLTable(data, m);
-        }
-
-        function renderPnLTable(data, monthStr) {
-            const container = document.getElementById('pnlContainer');
-            container.innerHTML = '';
-            if(!data.length) { container.innerHTML = '<p class="text-center text-gray-500">No data</p>'; return; }
-
-            const report = {};
-            data.forEach(r => {
-                const g = getGroup(r.branch_name);
-                const b = r.branch_name || "Unknown";
-                if(!report[g]) report[g] = {};
-                if(!report[g][b]) report[g][b] = 0;
-                report[g][b] += (Number(r.total_amount)||0);
-            });
-
-            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
-
-            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
-                if(!report[grp]) return;
-                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                let rows = ''; let total = 0;
-                Object.entries(report[grp]).forEach(([br, sales]) => {
-                    total += sales;
-                    const key = `COST_${monthStr}_${br}`;
-                    const cost = localStorage.getItem(key) || 0;
-                    const profit = sales - cost;
-                    const pColor = profit >= 0 ? 'text-emerald-600' : 'text-red-600';
-                    rows += `<tr class="border-b hover:bg-slate-50"><td class="py-3 px-6 text-sm">${br}</td><td class="py-3 px-6 text-right font-mono">${cur.format(sales)}</td><td class="py-3 px-6 text-right"><input type="number" value="${cost}" class="border rounded px-2 py-1 text-right w-28 text-sm" onchange="updateCost('${key}', this.value, ${sales}, this)"></td><td class="py-3 px-6 text-right font-mono font-bold ${pColor} profit-cell">${cur.format(profit)}</td></tr>`;
-                });
-                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm"><div class="bg-${color}-50 px-6 py-4 border-b border-${color}-100 flex justify-between font-bold text-${color}-800"><span>${grp} Group</span><span>Total: ${cur.format(total)}</span></div><table class="w-full"><tbody>${rows}</tbody></table></div>`;
-            });
-        }
-
-        window.updateCost = (key, val, sales, el) => {
-            localStorage.setItem(key, val);
-            const profit = sales - val;
-            const cell = el.closest('tr').querySelector('.profit-cell');
-            cell.innerText = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'}).format(profit);
-            cell.className = `py-3 px-6 text-right font-mono font-bold profit-cell ${profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
-        };
-
         window.switchTab = (t) => {
-            ['dashboard', 'compare', 'pnl'].forEach(x => document.getElementById(`view-${x}`).classList.add('hidden'));
+            ['dashboard', 'compare', 'pnl', 'branch'].forEach(x => {
+                document.getElementById(`view-${x}`).classList.add('hidden');
+                const btn = document.getElementById(`nav-${x}`);
+                if(btn) btn.classList.remove('active');
+            });
             document.getElementById(`view-${t}`).classList.remove('hidden');
+            document.getElementById(`nav-${t}`).classList.add('active');
+            
             if(t==='pnl') loadPnLMonth();
+            if(t==='branch') renderBranchView(); // Refresh branch view on switch
         };
 
-        // EVENT LISTENERS
+        // IMPORT & DELETE (UPDATED)
         function setupEventListeners() {
             document.getElementById('globalImportBtn').onclick = () => document.getElementById('globalCsvInput').click();
             document.getElementById('globalCsvInput').onchange = async (e) => {
                 const files = e.target.files;
                 if(!files.length) return;
                 showLoading(true, "Uploading...");
-                const bar = document.getElementById('progressBar');
-                document.getElementById('progressBarContainer').classList.remove('hidden');
+                const bar = document.getElementById('uploadBar');
+                document.getElementById('uploadProgress').classList.remove('hidden');
+                
                 for(let i=0; i<files.length; i++) {
                     const f = files[i];
                     const { data: exists } = await supabase.from(LOG_TABLE).select('*').eq('filename', f.name).single();
-                    if(exists) { alert(`❌ BLOCK: ${f.name} already exists!`); continue; }
+                    if(exists) { alert(`❌ Blocked: ${f.name} already exists.`); continue; }
 
                     await new Promise(resolve => {
                         Papa.parse(f, { header:false, skipEmptyLines:true, complete: async (res) => {
@@ -521,6 +518,7 @@
                 const f = e.target.files[0];
                 if(!f || !confirm(`Delete data from ${f.name}?`)) return;
                 showLoading(true, "Deleting...");
+                
                 Papa.parse(f, { header:false, skipEmptyLines:true, complete: async (res) => {
                     const rows = res.data.map(transform).filter(r => r);
                     const batch = 50;
@@ -539,9 +537,9 @@
             };
             
             document.getElementById('globalResetBtn').onclick = async () => {
-                const pass = prompt("Enter Passcode (001):");
+                const pass = prompt("Enter Passcode to RESET DB (001):");
                 if(pass !== '001') return alert("Wrong Passcode");
-                if(confirm("FINAL WARNING: DELETE ALL DATA?")) {
+                if(confirm("DELETE ALL DATA?")) {
                     await supabase.from(TABLE).delete().neq('id', 0);
                     await supabase.from(LOG_TABLE).delete().neq('id', 0);
                     alert("Cleared"); location.reload();
@@ -565,6 +563,39 @@
                 price_per_sheet: 0, total_amount: parseFloat((row[10]||"0").replace(/,/g, "")),
                 payment_type: (row[11]||"").trim(), branch_name: (row[14]||"").trim()
             };
+        }
+
+        // COMPARE & PNL
+        window.runCompare = async () => {
+            const sA = document.getElementById('compStartA').value; const eA = document.getElementById('compEndA').value;
+            const sB = document.getElementById('compStartB').value; const eB = document.getElementById('compEndB').value;
+            if(!sA || !eA || !sB || !eB) return alert("Select dates");
+            const dataA = await fetchData(sA, eA); const dataB = await fetchData(sB, eB);
+            const calc = (d) => d.reduce((acc, r) => ({s: acc.s + (Number(r.total_amount)||0), q: acc.q + (Number(r.quantity)||0)}), {s:0, q:0});
+            const rA = calc(dataA); const rB = calc(dataB);
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'}); const num = new Intl.NumberFormat('en-US');
+            document.getElementById('compValA').innerText = cur.format(rA.s); document.getElementById('compQtyA').innerText = num.format(rA.q);
+            document.getElementById('compValB').innerText = cur.format(rB.s); document.getElementById('compQtyB').innerText = num.format(rB.q);
+            if(charts.compare) charts.compare.destroy();
+            charts.compare = new Chart(document.getElementById('compareChart'), { type: 'bar', data: { labels: ['Sales', 'Qty'], datasets: [{ label: 'Period A', data: [rA.s, rA.q], backgroundColor: '#3b82f6' }, { label: 'Period B', data: [rB.s, rB.q], backgroundColor: '#f97316' }] }, options: { responsive: true, maintainAspectRatio: false } });
+        };
+
+        async function loadPnLMonth() {
+            const m = document.getElementById('pnlMonth').value; if(!m) return;
+            const [y, mo] = m.split('-'); const data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
+            const report = {};
+            data.forEach(r => { const g=getGroup(r.branch_name); const b=r.branch_name||"Unknown"; if(!report[g]) report[g]={}; if(!report[g][b]) report[g][b]=0; report[g][b]+=(Number(r.total_amount)||0); });
+            const container = document.getElementById('pnlContainer'); container.innerHTML = '';
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
+            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
+                if(!report[grp]) return;
+                let rows = ''; let total = 0;
+                Object.entries(report[grp]).forEach(([br, sales]) => {
+                    total+=sales; const k=`COST_${m}_${br}`; const c=localStorage.getItem(k)||0; const p=sales-c;
+                    rows+=`<tr class="border-b"><td class="py-2 px-4 text-sm">${br}</td><td class="text-right">${cur.format(sales)}</td><td class="text-right"><input type="number" value="${c}" class="border w-20 text-right text-sm" onchange="updateCost('${k}', this.value, ${sales}, this)"></td><td class="text-right font-bold ${p>=0?'text-green-600':'text-red-600'} profit-cell">${cur.format(p)}</td></tr>`;
+                });
+                container.innerHTML += `<div class="bg-white rounded-xl border p-4"><div class="font-bold mb-2 flex justify-between"><span>${grp}</span><span>${cur.format(total)}</span></div><table class="w-full"><tbody>${rows}</tbody></table></div>`;
+            });
         }
     </script>
 </body>
