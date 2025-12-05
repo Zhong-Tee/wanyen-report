@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.27 (Manager Edition)</title>
+    <title>SalesPulse V.28 (Layout & Compare Fix)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -29,7 +29,7 @@
     <aside class="w-64 bg-white border-r border-slate-200 flex flex-col z-20 shadow-lg">
         <div class="h-16 flex items-center px-6 border-b border-slate-100 bg-slate-50">
             <div class="bg-indigo-600 text-white p-1.5 rounded mr-3">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <span class="font-bold text-lg text-slate-800 tracking-tight">SalesPulse</span>
         </div>
@@ -42,7 +42,7 @@
                 Branch Analysis
             </button>
             <button onclick="switchTab('cost')" id="nav-cost" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
-                Branch Cost (Setting)
+                Branch Cost
             </button>
             <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
                 Sales Compare
@@ -98,27 +98,24 @@
                 </div>
             </div>
 
-            <!-- KPIs -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><p class="text-sm font-bold text-slate-400 uppercase">Total Sales</p><p class="text-3xl font-black text-slate-800" id="dashSales">0.00</p></div>
                 <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><p class="text-sm font-bold text-slate-400 uppercase">Sheets Sold</p><p class="text-3xl font-black text-slate-800" id="dashQty">0</p></div>
                 <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm"><p class="text-sm font-bold text-slate-400 uppercase">Avg / Sheet</p><p class="text-3xl font-black text-slate-800" id="dashAvg">0.00</p></div>
             </div>
 
-            <!-- Charts -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Trend -->
                 <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
                     <h3 class="text-lg font-bold text-slate-800 mb-4">Sales Trend</h3>
                     <div class="h-72 relative w-full"><canvas id="salesTrendChart"></canvas></div>
                 </div>
-                <!-- Weekly (FIXED: Table on Right, No Scroll) -->
-                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
-                    <h3 class="text-lg font-bold text-slate-800 mb-4">Weekly Sales</h3>
+                <div class="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4">Weekly Sales (Mon-Sun)</h3>
                     <div class="flex flex-col md:flex-row gap-4 h-72">
                         <div class="flex-1 relative"><canvas id="weeklySalesChart"></canvas></div>
-                        <div class="w-full md:w-48 flex flex-col justify-center">
+                        <div class="w-full md:w-48 flex flex-col justify-center overflow-hidden">
                             <table class="w-full text-xs">
+                                <thead class="bg-slate-100 text-xs uppercase text-slate-500"><tr><th class="px-3 py-2 text-left">Day</th><th class="px-3 py-2 text-right">Sales</th></tr></thead>
                                 <tbody id="weeklySummaryTable" class="divide-y divide-slate-100"></tbody>
                             </table>
                         </div>
@@ -127,29 +124,32 @@
             </div>
         </div>
 
-        <!-- 2. BRANCH ANALYSIS -->
+        <!-- 2. BRANCH ANALYSIS (FIXED HEIGHT) -->
         <div id="view-branch" class="hidden fade-in space-y-8">
-             <div class="flex justify-between items-end border-b border-slate-100 pb-6">
-                <h2 class="text-3xl font-bold text-slate-900">Branch Group Analysis</h2>
-                <div class="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border">
+             <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Branch Group Analysis</h2>
+                    <p class="text-sm text-slate-500 mt-1">Performance overview & detailed rankings.</p>
+                </div>
+                <div class="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm">
                     <input type="date" id="branchStart" class="text-sm border p-1.5 rounded">
+                    <span class="text-slate-400">-</span>
                     <input type="date" id="branchEnd" class="text-sm border p-1.5 rounded">
-                    <button onclick="renderBranchView()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-sm font-medium">Update</button>
+                    <button onclick="renderBranchView()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-indigo-700">Update</button>
                 </div>
             </div>
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="branchCardsContainer"></div>
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="branchCardsContainer">
+                <!-- Cards Injected Here -->
+            </div>
         </div>
 
-        <!-- 3. BRANCH COST (NEW) -->
+        <!-- 3. BRANCH COST -->
         <div id="view-cost" class="hidden fade-in space-y-6">
             <div class="border-b border-slate-100 pb-4">
                 <h2 class="text-3xl font-bold text-slate-900">Branch Cost Settings</h2>
-                <p class="text-sm text-slate-500">Set Rent and GP% for each branch. (Data is saved automatically)</p>
+                <p class="text-sm text-slate-500">Set Rent and GP% for each branch.</p>
             </div>
-            
-            <div id="costContainer" class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                <!-- Injected via JS -->
-            </div>
+            <div id="costContainer" class="grid grid-cols-1 xl:grid-cols-3 gap-8"></div>
         </div>
 
         <!-- 4. COMPARE (FIXED) -->
@@ -160,22 +160,24 @@
                     <h4 class="font-bold text-blue-800 mb-4">Period A</h4>
                     <div class="flex gap-2 mb-6"><input type="date" id="compStartA" class="border p-2 w-full text-sm rounded"><input type="date" id="compEndA" class="border p-2 w-full text-sm rounded"></div>
                     <p class="text-3xl font-black text-slate-800" id="compValA">0.00</p>
+                    <p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyA" class="font-bold">0</span></p>
                 </div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200">
                     <h4 class="font-bold text-orange-800 mb-4">Period B</h4>
                     <div class="flex gap-2 mb-6"><input type="date" id="compStartB" class="border p-2 w-full text-sm rounded"><input type="date" id="compEndB" class="border p-2 w-full text-sm rounded"></div>
                     <p class="text-3xl font-black text-slate-800" id="compValB">0.00</p>
+                    <p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyB" class="font-bold">0</span></p>
                 </div>
             </div>
             <div class="flex justify-center pt-4"><button onclick="runCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 font-bold">Run Comparison</button></div>
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mt-6"><div class="h-96"><canvas id="compareChart"></canvas></div></div>
         </div>
 
-        <!-- 5. P&L (UPDATED) -->
+        <!-- 5. P&L -->
         <div id="view-pnl" class="hidden fade-in space-y-8">
             <div class="flex justify-between items-end border-b border-slate-100 pb-6">
-                <div><h2 class="text-3xl font-bold text-slate-900">Profit & Loss</h2><p class="text-sm text-slate-500">Net Profit = Sales - Rent - (Sales * GP%)</p></div>
-                <div class="flex flex-col items-end"><label class="text-xs font-bold text-slate-400 uppercase mb-1">Select Month</label><input type="month" id="pnlMonth" class="border border-slate-300 rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-indigo-500" onchange="loadPnLMonth()"></div>
+                <h2 class="text-3xl font-bold text-slate-900">Profit & Loss</h2>
+                <input type="month" id="pnlMonth" class="border p-2 rounded shadow-sm" onchange="loadPnLMonth()">
             </div>
             <div id="pnlContainer" class="space-y-8 pb-12"></div>
         </div>
@@ -187,14 +189,8 @@
         <div class="bg-white w-11/12 md:max-w-6xl h-[90vh] rounded-2xl shadow-2xl z-10 flex flex-col overflow-hidden transform transition-all scale-95" id="modalContent">
             <div class="flex justify-between items-center px-6 py-4 border-b bg-slate-50"><h3 class="font-bold text-xl text-slate-800" id="modalTitle">Rankings</h3><button onclick="toggleRankingModal()" class="text-slate-400 hover:text-red-500 text-2xl">×</button></div>
             <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden flex-1 bg-white">
-                <div class="flex flex-col h-full border rounded-xl overflow-hidden shadow-sm">
-                    <div class="bg-indigo-50 px-4 py-3 font-bold text-indigo-700 text-sm uppercase border-b">Top Products</div>
-                    <div class="flex-1 overflow-y-auto"><table class="w-full text-sm"><tbody id="modalProdBody" class="divide-y divide-slate-100"></tbody></table></div>
-                </div>
-                <div class="flex flex-col h-full border rounded-xl overflow-hidden shadow-sm">
-                    <div class="bg-emerald-50 px-4 py-3 font-bold text-emerald-700 text-sm uppercase border-b">Top Branches</div>
-                    <div class="flex-1 overflow-y-auto"><table class="w-full text-sm"><tbody id="modalBranchBody" class="divide-y divide-slate-100"></tbody></table></div>
-                </div>
+                <div class="flex flex-col h-full border rounded-xl overflow-hidden shadow-sm"><div class="bg-indigo-50 px-4 py-3 font-bold text-indigo-700 text-sm uppercase border-b">Top Products</div><div class="flex-1 overflow-y-auto"><table class="w-full text-sm"><tbody id="modalProdBody" class="divide-y divide-slate-100"></tbody></table></div></div>
+                <div class="flex flex-col h-full border rounded-xl overflow-hidden shadow-sm"><div class="bg-emerald-50 px-4 py-3 font-bold text-emerald-700 text-sm uppercase border-b">Top Branches</div><div class="flex-1 overflow-y-auto"><table class="w-full text-sm"><tbody id="modalBranchBody" class="divide-y divide-slate-100"></tbody></table></div></div>
             </div>
         </div>
     </div>
@@ -210,7 +206,6 @@
 
         let supabase, GLOBAL_DATA = [], charts = {};
 
-        // INIT
         window.onload = async () => {
             initYearPicker();
             const d = new Date().toISOString().split('T')[0];
@@ -235,7 +230,7 @@
 
         function updateStatus(connected, msg) {
             const el = document.getElementById('dbStatus');
-            el.innerHTML = `<div class="w-2 h-2 rounded-full ${connected?'bg-green-500':'bg-red-500'}"></div> ${connected ? 'Connected ('+msg+')' : 'Error: '+msg}`;
+            el.innerHTML = `<div class="w-2 h-2 rounded-full ${connected?'bg-green-500':'bg-red-500'}"></div> ${connected ? 'Connected ('+msg+')' : 'Error'}`;
         }
 
         function showLoading(show, text="Loading...") {
@@ -244,7 +239,6 @@
             overlay.classList[show?'remove':'add']('hidden');
         }
 
-        // FETCH
         async function fetchData(s, e) {
             showLoading(true, "Fetching...");
             let allRows = [], from = 0, pageSize = 1000, keepFetching = true;
@@ -272,14 +266,12 @@
             document.getElementById('branchStart').value = s;
             document.getElementById('branchEnd').value = e;
             renderDashboard();
-            renderCostSettings(); // Populate Branch List
+            renderCostSettings();
         }
 
-        // --- 1. DASHBOARD ---
         function renderDashboard() {
             let sum=0, qty=0;
-            const weeklyStats = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
-            const dailyStats = {};
+            const dailyStats = {}, weeklyStats = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
 
             GLOBAL_DATA.forEach(r => {
                 const v = Number(r.total_amount)||0;
@@ -295,6 +287,7 @@
             document.getElementById('dashSales').innerText = cur.format(sum);
             document.getElementById('dashQty').innerText = num.format(qty);
             document.getElementById('dashAvg').innerText = cur.format(qty ? sum/qty : 0);
+
             renderCharts(dailyStats, weeklyStats);
         }
 
@@ -316,16 +309,16 @@
             charts.weekly = new Chart(document.getElementById('weeklySalesChart'), {
                 type: 'bar',
                 data: { labels: dayLabels, datasets: [{ label: 'Sales', data: weekData, backgroundColor: '#10b981', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false}, datalabels: { anchor: 'end', align: 'top', formatter: val => val>=1000?(val/1000).toFixed(1)+'k':val } }, layout: { padding: { top: 20 } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false}, datalabels: { display: false } } }
             });
 
-            // RIGHT SIDE TABLE (FIXED NO SCROLL)
+            // Vertical Table
             document.getElementById('weeklySummaryTable').innerHTML = dayLabels.map((d, i) => 
-                `<tr><td class="py-1.5 px-2 text-slate-600">${d}</td><td class="py-1.5 px-2 text-right font-bold text-slate-800">${cur.format(weekData[i])}</td></tr>`
+                `<tr class="hover:bg-slate-50"><td class="py-2 px-3 text-slate-600">${d}</td><td class="py-2 px-3 text-right font-mono font-bold text-slate-800">${cur.format(weekData[i])}</td></tr>`
             ).join('');
         }
 
-        // --- 2. BRANCH ANALYSIS ---
+        // --- 2. BRANCH VIEW ---
         function renderBranchView() {
             const s = document.getElementById('branchStart').value;
             const e = document.getElementById('branchEnd').value;
@@ -356,9 +349,9 @@
                 const topBr = Object.entries(branchStats).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v],i)=>`<tr class="border-b border-${color}-50 text-xs"><td class="py-1 text-slate-500 w-4">${i+1}</td><td class="py-1 truncate max-w-[80px]" title="${k}">${k}</td><td class="py-1 text-right">${cur.format(v)}</td></tr>`).join('');
 
                 container.innerHTML += `
-                <div class="bg-white rounded-xl border border-${color}-200 shadow-sm flex flex-col">
+                <div class="bg-white rounded-xl border border-${color}-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full">
                     <div class="bg-${color}-50 px-5 py-3 border-b border-${color}-100 flex justify-between items-center">
-                        <h3 class="font-bold text-${color}-700">${grp}</h3>
+                        <h3 class="font-bold text-${color}-700 text-lg">${grp}</h3>
                         <span class="text-xs bg-white px-2 py-1 rounded font-bold border border-${color}-200 text-${color}-600">${d.branches.size} Br</span>
                     </div>
                     <div class="p-4 flex-1 space-y-4">
@@ -366,7 +359,7 @@
                             <div><p class="text-[10px] text-slate-400 font-bold">SALES</p><p class="font-bold text-slate-800">${cur.format(d.sum)}</p></div>
                             <div><p class="text-[10px] text-slate-400 font-bold">QTY</p><p class="font-bold text-slate-800">${num.format(d.qty)}</p></div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 h-32">
+                        <div class="grid grid-cols-2 gap-2"> <!-- Removed Fixed Height -->
                             <div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP PRODUCTS</p><table class="w-full">${topProd}</table></div>
                             <div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP BRANCHES</p><table class="w-full">${topBr}</table></div>
                         </div>
@@ -378,16 +371,26 @@
             });
         }
 
-        // --- 3. BRANCH COST ---
+        window.openGroupModal = (grp) => {
+            const s = document.getElementById('branchStart').value;
+            const e = document.getElementById('branchEnd').value;
+            const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e && getGroup(r.branch_name) === grp);
+            const prod={}, br={};
+            data.forEach(r=>{ const v=Number(r.total_amount)||0; prod[r.product||"?"]=(prod[r.product||"?"]||0)+v; br[r.branch_name||"?"]=(br[r.branch_name||"?"]||0)+v; });
+            document.getElementById('modalTitle').innerText = `${grp} - All Data (${s} to ${e})`;
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
+            const fill = (id, obj) => { document.getElementById(id).innerHTML = Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>`<tr class="hover:bg-slate-50"><td class="p-3 pl-4 text-slate-400 w-10">${i+1}</td><td class="p-3 text-slate-700 font-medium">${k}</td><td class="p-3 text-right font-mono font-bold">${cur.format(v)}</td></tr>`).join(''); };
+            fill('modalProdBody', prod); fill('modalBranchBody', br);
+            toggleRankingModal();
+        };
+
+        // --- 3. COST ---
         function renderCostSettings() {
             const branches = new Set();
             GLOBAL_DATA.forEach(r => branches.add(r.branch_name || "Unknown"));
             const container = document.getElementById('costContainer');
             container.innerHTML = '';
-            
-            // Retrieve existing settings
             const stored = JSON.parse(localStorage.getItem('BRANCH_COSTS')) || {};
-            
             const groups = {'Moshi': [], 'B2S': [], 'Wanyen': []};
             Array.from(branches).sort().forEach(b => groups[getGroup(b)].push(b));
 
@@ -396,23 +399,9 @@
                 let rows = '';
                 groups[grp].forEach(br => {
                     const s = stored[br] || {rent:0, gp:0};
-                    rows += `<tr class="border-b hover:bg-slate-50">
-                        <td class="py-2 px-4 text-xs font-medium truncate max-w-[150px]" title="${br}">${br}</td>
-                        <td class="py-2 px-2 text-right"><input type="number" value="${s.rent}" class="border rounded w-20 text-right text-xs p-1" onchange="saveCost('${br}', 'rent', this.value)"></td>
-                        <td class="py-2 px-2 text-right"><input type="number" value="${s.gp}" class="border rounded w-14 text-right text-xs p-1" onchange="saveCost('${br}', 'gp', this.value)"></td>
-                        <td class="py-2 px-2 text-center"><button onclick="deleteCost('${br}')" class="text-red-400 hover:text-red-600">×</button></td>
-                    </tr>`;
+                    rows += `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-4 text-xs font-medium truncate max-w-[150px]" title="${br}">${br}</td><td class="py-2 px-2 text-right"><input type="number" value="${s.rent}" class="border rounded w-20 text-right text-xs p-1" onchange="saveCost('${br}', 'rent', this.value)"></td><td class="py-2 px-2 text-right"><input type="number" value="${s.gp}" class="border rounded w-14 text-right text-xs p-1" onchange="saveCost('${br}', 'gp', this.value)"></td><td class="py-2 px-2 text-center"><button onclick="deleteCost('${br}')" class="text-red-400 hover:text-red-600">×</button></td></tr>`;
                 });
-                container.innerHTML += `
-                <div class="bg-white rounded-xl border border-${color}-200 overflow-hidden">
-                    <div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm">${grp}</div>
-                    <div class="max-h-96 overflow-y-auto">
-                        <table class="w-full">
-                            <thead class="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th class="text-left px-4 py-2">Branch</th><th class="px-2 text-right">Rent</th><th class="px-2 text-right">%GP</th><th class="px-2"></th></tr></thead>
-                            <tbody>${rows}</tbody>
-                        </table>
-                    </div>
-                </div>`;
+                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 overflow-hidden"><div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm">${grp}</div><div class="max-h-96 overflow-y-auto"><table class="w-full"><thead class="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th class="text-left px-4 py-2">Branch</th><th class="px-2 text-right">Rent</th><th class="px-2 text-right">%GP</th><th class="px-2"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
             });
         }
 
@@ -431,134 +420,73 @@
             renderCostSettings();
         };
 
-        // --- 4. P&L (UPDATED) ---
-        async function loadPnLMonth() {
-            const m = document.getElementById('pnlMonth').value;
-            if(!m) return;
-            const [y, mo] = m.split('-');
-            const data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
-            const container = document.getElementById('pnlContainer');
-            container.innerHTML = '';
+        // --- 4. COMPARE ---
+        window.runCompare = async () => {
+            const sA = document.getElementById('compStartA').value; const eA = document.getElementById('compEndA').value;
+            const sB = document.getElementById('compStartB').value; const eB = document.getElementById('compEndB').value;
+            if(!sA || !eA || !sB || !eB) return alert("Select dates");
             
-            if(!data.length) { container.innerHTML = '<p class="text-center text-gray-500 p-8">No data found for this month.</p>'; return; }
+            // FIX: Fetch Data Independently
+            const dataA = await fetchData(sA, eA);
+            const dataB = await fetchData(sB, eB);
 
-            // Load Costs
-            const costs = JSON.parse(localStorage.getItem('BRANCH_COSTS')) || {};
-            const report = {'Moshi': [], 'B2S': [], 'Wanyen': []};
-            const branchSales = {};
+            const calc = (d) => d.reduce((acc, r) => ({s: acc.s + (Number(r.total_amount)||0), q: acc.q + (Number(r.quantity)||0)}), {s:0, q:0});
+            const rA = calc(dataA); const rB = calc(dataB);
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
+            const num = new Intl.NumberFormat('en-US');
 
-            data.forEach(r => {
-                const b = r.branch_name || "Unknown";
-                branchSales[b] = (branchSales[b]||0) + Number(r.total_amount);
+            document.getElementById('compValA').innerText = cur.format(rA.s); document.getElementById('compQtyA').innerText = num.format(rA.q);
+            document.getElementById('compValB').innerText = cur.format(rB.s); document.getElementById('compQtyB').innerText = num.format(rB.q);
+
+            if(charts.compare) charts.compare.destroy();
+            charts.compare = new Chart(document.getElementById('compareChart').getContext('2d'), {
+                type: 'bar', data: { labels: ['Sales', 'Qty'], datasets: [{ label: 'Period A', data: [rA.s, rA.q], backgroundColor: '#3b82f6' }, { label: 'Period B', data: [rB.s, rB.q], backgroundColor: '#f97316' }] }, options: { responsive: true, maintainAspectRatio: false }
             });
+        };
 
-            Object.entries(branchSales).forEach(([br, sales]) => {
-                const grp = getGroup(br);
-                const setting = costs[br] || {rent:0, gp:0};
-                const rent = setting.rent;
-                const gpDed = sales * (setting.gp / 100);
-                const profit = sales - rent - gpDed;
-                report[grp].push({ br, sales, rent, gp: setting.gp, gpDed, profit });
-            });
-
+        // --- 5. P&L ---
+        async function loadPnLMonth() {
+            const m = document.getElementById('pnlMonth').value; if(!m) return;
+            const [y, mo] = m.split('-'); const data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
+            const report = {};
+            data.forEach(r => { const g=getGroup(r.branch_name); const b=r.branch_name||"Unknown"; if(!report[g]) report[g]={}; if(!report[g][b]) report[g][b]=0; report[g][b]+=(Number(r.total_amount)||0); });
+            const container = document.getElementById('pnlContainer'); container.innerHTML = '';
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
             
-            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
-                if(!report[grp].length) return;
-                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                let rows = '', totalSales=0, totalProfit=0;
+            // Load Costs
+            const costs = JSON.parse(localStorage.getItem('BRANCH_COSTS')) || {};
 
-                report[grp].forEach(d => {
-                    totalSales += d.sales;
-                    totalProfit += d.profit;
+            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
+                if(!report[grp]) return;
+                let rows = ''; let total = 0;
+                Object.entries(report[grp]).forEach(([br, sales]) => {
+                    const setting = costs[br] || {rent:0, gp:0};
+                    const rent = setting.rent;
+                    const gpDed = sales * (setting.gp / 100);
+                    const profit = sales - rent - gpDed;
+                    total+=profit; // Sum Net Profit
+                    const k = `COST_PNL_${br}`; // Temporary key for input binding visualization
+
                     rows += `<tr class="border-b hover:bg-slate-50 text-sm">
-                        <td class="py-2 px-4">${d.br}</td>
-                        <td class="py-2 px-4 text-right font-mono">${cur.format(d.sales)}</td>
-                        <td class="py-2 px-4 text-right text-slate-500">${cur.format(d.rent)}</td>
-                        <td class="py-2 px-4 text-right text-slate-500">${d.gp}% (${cur.format(d.gpDed)})</td>
-                        <td class="py-2 px-4 text-right font-bold font-mono ${d.profit>=0?'text-emerald-600':'text-red-600'}">${cur.format(d.profit)}</td>
+                        <td class="py-2 px-4">${br}</td>
+                        <td class="text-right font-mono">${cur.format(sales)}</td>
+                        <td class="text-right text-slate-500">${cur.format(rent)}</td>
+                        <td class="text-right text-slate-500">${setting.gp}% (${cur.format(gpDed)})</td>
+                        <td class="text-right font-bold ${profit>=0?'text-emerald-600':'text-red-600'}">${cur.format(profit)}</td>
                     </tr>`;
                 });
-
-                container.innerHTML += `
-                <div class="bg-white rounded-xl border border-${color}-200 shadow-sm overflow-hidden">
-                    <div class="bg-${color}-50 px-6 py-3 border-b border-${color}-100 flex justify-between items-center">
-                        <h3 class="font-bold text-${color}-800 text-lg">${grp} Summary</h3>
-                        <div class="text-right">
-                            <span class="text-xs text-slate-500 uppercase">Net Profit</span>
-                            <span class="font-bold ${totalProfit>=0?'text-emerald-600':'text-red-600'} text-xl ml-2">${cur.format(totalProfit)}</span>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-slate-50 text-xs uppercase text-slate-500">
-                                <tr><th class="text-left px-4 py-2">Branch</th><th class="text-right px-4">Revenue</th><th class="text-right px-4">Rent</th><th class="text-right px-4">GP Ded.</th><th class="text-right px-4">Net Profit</th></tr>
-                            </thead>
-                            <tbody>${rows}</tbody>
-                        </table>
-                    </div>
-                </div>`;
+                container.innerHTML += `<div class="bg-white rounded-xl border border-${grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange')}-200 overflow-hidden shadow-sm"><div class="bg-gray-50 px-6 py-3 border-b flex justify-between font-bold"><span>${grp} Group</span><span>Net Profit: ${cur.format(total)}</span></div><table class="w-full"><thead><tr class="text-xs text-slate-500 bg-slate-50 border-b"><th class="px-4 py-2 text-left">Branch</th><th class="text-right">Sales</th><th class="text-right">Rent</th><th class="text-right">GP Ded.</th><th class="text-right">Net Profit</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             });
         }
 
-        // --- UTILS ---
+        // UTILS
         function getGroup(b) { b=(b||"").toUpperCase(); if(b.includes('MOSHI')||b.includes('MS')) return 'Moshi'; if(b.includes('B2S')) return 'B2S'; return 'Wanyen'; }
         function initYearPicker() { const s = document.getElementById('dashYearPicker'); const y = new Date().getFullYear(); for(let i=y;i>=y-5;i--){let o=document.createElement('option'); o.value=i; o.innerText=i; s.appendChild(o);} }
         
         window.filterDash7Days = () => { const e=new Date(); const s=new Date(); s.setDate(e.getDate()-6); setDash(s,e); };
         window.filterDashByMonth = (m) => { if(!m) return; const [y,mo]=m.split('-'); setDash(new Date(y,mo-1,1), new Date(y,mo,0)); };
         window.filterDashByYear = (y) => { if(!y) return; setDash(new Date(y,0,1), new Date(y,11,31)); };
-        
         function setDash(s,e) { const f=d=>d.toISOString().split('T')[0]; document.getElementById('dashStart').value=f(s); document.getElementById('dashEnd').value=f(e); fetchDataAndRender(); }
-
-        // COMPARE
-        window.runCompare = async () => {
-            // ... (Same as before, ensure independent fetch)
-            const sA = document.getElementById('compStartA').value; const eA = document.getElementById('compEndA').value;
-            const sB = document.getElementById('compStartB').value; const eB = document.getElementById('compEndB').value;
-            if(!sA || !eA || !sB || !eB) return alert("Select dates");
-            const dA = await fetchData(sA, eA); const dB = await fetchData(sB, eB);
-            const calc = d => d.reduce((a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}), {s:0,q:0});
-            const rA = calc(dA); const rB = calc(dB);
-            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
-            const num = new Intl.NumberFormat('en-US');
-            document.getElementById('compValA').innerText = cur.format(rA.s); document.getElementById('compQtyA').innerText = num.format(rA.q);
-            document.getElementById('compValB').innerText = cur.format(rB.s); document.getElementById('compQtyB').innerText = num.format(rB.q);
-            
-            if(charts.compare) charts.compare.destroy();
-            charts.compare = new Chart(document.getElementById('compareChart').getContext('2d'), {
-                type: 'bar', data: { labels: ['Sales', 'Qty'], datasets: [{ label: 'Period A', data: [rA.s, rA.q], backgroundColor: '#3b82f6' }, { label: 'Period B', data: [rB.s, rB.q], backgroundColor: '#f97316' }] },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        };
-
-        // MODAL
-        window.openGroupModal = (grp) => {
-            const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
-            const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e && getGroup(r.branch_name) === grp);
-            const prod={}, br={};
-            data.forEach(r=>{ 
-                const v=Number(r.total_amount)||0; 
-                prod[r.product||"?"]=(prod[r.product||"?"]||0)+v; 
-                br[r.branch_name||"?"]=(br[r.branch_name||"?"]||0)+v; 
-            });
-            document.getElementById('modalTitle').innerText = `${grp} - All Data (${s} to ${e})`;
-            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
-            const fill = (id, obj) => {
-                document.getElementById(id).innerHTML = Object.entries(obj).sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>
-                    `<tr class="hover:bg-slate-50"><td class="p-2 text-slate-400">${i+1}</td><td class="p-2 truncate max-w-[200px]">${k}</td><td class="p-2 text-right font-mono">${cur.format(v)}</td></tr>`
-                ).join('');
-            };
-            fill('modalProdBody', prod); fill('modalBranchBody', br);
-            toggleRankingModal();
-        };
-
-        window.toggleRankingModal = () => {
-            const m = document.getElementById('rankingModal'); m.classList.toggle('opacity-0'); m.classList.toggle('pointer-events-none');
-            document.body.classList.toggle('modal-active');
-        };
-        
-        window.closeModal = () => toggleRankingModal();
 
         window.switchTab = (t) => {
             ['dashboard', 'compare', 'pnl', 'branch', 'cost'].forEach(x => {
@@ -573,18 +501,17 @@
             if(t==='branch') renderBranchView();
         };
 
-        // Listeners & Setup (Same as V.26 - Kept standard)
+        window.closeModal = () => toggleRankingModal();
+
         function setupEventListeners() {
             document.getElementById('globalImportBtn').onclick = () => document.getElementById('globalCsvInput').click();
             document.getElementById('globalCsvInput').onchange = async (e) => {
-                /* ... Same upload logic ... */ 
-                // For brevity, reusing existing robust logic or copy from V.26
                 const files = e.target.files; if(!files.length) return;
                 showLoading(true, "Uploading...");
                 for(let i=0; i<files.length; i++) {
                     const f = files[i];
                     const { data: exists } = await supabase.from(LOG_TABLE).select('*').eq('filename', f.name).single();
-                    if(exists && !confirm(`File ${f.name} exists. Upload anyway?`)) continue;
+                    if(exists) { alert(`❌ BLOCK: ${f.name} already exists!`); continue; }
                     await new Promise(r => Papa.parse(f, {header:false, skipEmptyLines:true, complete: async(res)=>{
                         const rows=res.data.map(transform).filter(x=>x);
                         const batch=500; for(let j=0;j<Math.ceil(rows.length/batch);j++) await supabase.from(TABLE).insert(rows.slice(j*batch,(j+1)*batch));
@@ -597,7 +524,6 @@
             
             document.getElementById('deleteByFileBtn').onclick = () => document.getElementById('deleteFileInput').click();
             document.getElementById('deleteFileInput').onchange = async (e) => {
-                /* ... Same delete logic ... */
                 const f=e.target.files[0]; if(!f||!confirm("Delete data from "+f.name+"?")) return;
                 showLoading(true);
                 Papa.parse(f, {header:false, skipEmptyLines:true, complete:async(res)=>{
