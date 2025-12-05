@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.32 (UI Perfection)</title>
+    <title>SalesPulse V.33 (Service Plan Added)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -21,6 +21,8 @@
         .modal { transition: opacity 0.2s ease; }
         body.modal-active { overflow: hidden; }
         #loadingOverlay { backdrop-filter: blur(2px); background: rgba(255,255,255,0.8); }
+        .critical-stock { background-color: #fee2e2; color: #991b1b; } /* Red for low stock */
+        .warning-stock { background-color: #ffedd5; color: #9a3412; } /* Orange for warning */
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex overflow-hidden">
@@ -40,6 +42,11 @@
             <button onclick="switchTab('cost')" id="nav-cost" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Branch Cost</button>
             <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Sales Compare</button>
             <button onclick="switchTab('pnl')" id="nav-pnl" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Profit & Loss</button>
+            <!-- NEW MENU -->
+            <button onclick="switchTab('planning')" id="nav-planning" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+                Service Planning
+            </button>
         </nav>
 
         <div class="p-4 border-t border-slate-100 bg-slate-50">
@@ -105,7 +112,6 @@
         <div id="view-branch" class="hidden fade-in space-y-8">
              <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div><h2 class="text-3xl font-bold text-slate-900 tracking-tight">Branch Group Analysis</h2><p class="text-sm text-slate-500 mt-1">Performance overview & detailed rankings.</p></div>
-                <!-- EDIT 1: Changed onclick to fetchBranchData() -->
                 <div class="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm"><input type="date" id="branchStart" class="text-sm border p-1.5 rounded"><span class="text-slate-400">-</span><input type="date" id="branchEnd" class="text-sm border p-1.5 rounded"><button onclick="fetchBranchData()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-indigo-700">Update</button></div>
             </div>
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="branchCardsContainerFull"></div>
@@ -117,59 +123,18 @@
             <div id="costContainer" class="grid grid-cols-1 xl:grid-cols-3 gap-8"></div>
         </div>
 
-        <!-- 4. COMPARE (REVISED) -->
+        <!-- 4. COMPARE -->
         <div id="view-compare" class="hidden fade-in space-y-8">
             <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">Sales Comparison</h2>
-            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Period A -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-200">
-                    <div class="flex justify-between items-center mb-4">
-                        <h4 class="font-bold text-blue-800">Period A</h4>
-                        <input type="month" class="text-xs border p-1 rounded" onchange="setCompMonth('A', this.value)" placeholder="Select Month">
-                    </div>
-                    <div class="flex gap-2 mb-6">
-                        <input type="date" id="compStartA" class="border p-2 w-full text-sm rounded">
-                        <input type="date" id="compEndA" class="border p-2 w-full text-sm rounded">
-                    </div>
-                    <p class="text-3xl font-black text-slate-800" id="compValA">0.00</p>
-                    <p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyA" class="font-bold">0</span></p>
-                </div>
-                
-                <!-- Period B -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200">
-                     <div class="flex justify-between items-center mb-4">
-                        <h4 class="font-bold text-orange-800">Period B</h4>
-                        <input type="month" class="text-xs border p-1 rounded" onchange="setCompMonth('B', this.value)" placeholder="Select Month">
-                    </div>
-                    <div class="flex gap-2 mb-6">
-                        <input type="date" id="compStartB" class="border p-2 w-full text-sm rounded">
-                        <input type="date" id="compEndB" class="border p-2 w-full text-sm rounded">
-                    </div>
-                    <p class="text-3xl font-black text-slate-800" id="compValB">0.00</p>
-                    <p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyB" class="font-bold">0</span></p>
-                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-200"><div class="flex justify-between items-center mb-4"><h4 class="font-bold text-blue-800">Period A</h4><input type="month" class="text-xs border p-1 rounded" onchange="setCompMonth('A', this.value)" placeholder="Select Month"></div><div class="flex gap-2 mb-6"><input type="date" id="compStartA" class="border p-2 w-full text-sm rounded"><input type="date" id="compEndA" class="border p-2 w-full text-sm rounded"></div><p class="text-3xl font-black text-slate-800" id="compValA">0.00</p><p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyA" class="font-bold">0</span></p></div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200"><div class="flex justify-between items-center mb-4"><h4 class="font-bold text-orange-800">Period B</h4><input type="month" class="text-xs border p-1 rounded" onchange="setCompMonth('B', this.value)" placeholder="Select Month"></div><div class="flex gap-2 mb-6"><input type="date" id="compStartB" class="border p-2 w-full text-sm rounded"><input type="date" id="compEndB" class="border p-2 w-full text-sm rounded"></div><p class="text-3xl font-black text-slate-800" id="compValB">0.00</p><p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyB" class="font-bold">0</span></p></div>
             </div>
-
-            <div class="flex justify-center pt-4">
-                <button onclick="runCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 font-bold">Run Comparison</button>
-            </div>
-
-            <div class="space-y-6 mt-6">
-                <!-- Line Chart Sales -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h4 class="font-bold text-slate-700 mb-4">Daily Sales Comparison (Line)</h4>
-                    <div class="h-96"><canvas id="compareSalesChart"></canvas></div>
-                </div>
-                <!-- Line Chart Qty -->
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h4 class="font-bold text-slate-700 mb-4">Daily Quantity Comparison (Line)</h4>
-                    <div class="h-96"><canvas id="compareQtyChart"></canvas></div>
-                </div>
-            </div>
+            <div class="flex justify-center pt-4"><button onclick="runCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 font-bold">Run Comparison</button></div>
+            <div class="space-y-6 mt-6"><div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><h4 class="font-bold text-slate-700 mb-4">Daily Sales Comparison (Line)</h4><div class="h-96"><canvas id="compareSalesChart"></canvas></div></div><div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><h4 class="font-bold text-slate-700 mb-4">Daily Quantity Comparison (Line)</h4><div class="h-96"><canvas id="compareQtyChart"></canvas></div></div></div>
         </div>
 
-        <!-- 5. P&L (UPDATED GP COL & SORTING) -->
+        <!-- 5. P&L -->
         <div id="view-pnl" class="hidden fade-in space-y-8">
             <div class="flex justify-between items-end border-b border-slate-100 pb-6">
                 <div><h2 class="text-3xl font-bold text-slate-900">Profit & Loss</h2><p class="text-sm text-slate-500">Calculate net profit by branch.</p></div>
@@ -177,6 +142,21 @@
             </div>
             <div id="pnlContainer" class="space-y-8 pb-12"></div>
         </div>
+
+        <!-- 6. SERVICE PLANNING (NEW) -->
+        <div id="view-planning" class="hidden fade-in space-y-8">
+            <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">Service Planning</h2>
+                    <p class="text-sm text-slate-500 mt-1">Stock analysis based on average sales (Weekdays vs Weekends) from current dashboard range.</p>
+                </div>
+                <button onclick="loadServicePlanning()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-indigo-700">Refresh Analysis</button>
+            </div>
+            <div id="planningContainer" class="space-y-8 pb-12">
+                <!-- Content will be injected here -->
+            </div>
+        </div>
+
     </main>
 
     <!-- MODAL -->
@@ -199,6 +179,7 @@
         const TABLE = 'sales_records';
         const LOG_TABLE = 'upload_logs';
         const COST_TABLE = 'branch_costs';
+        const STOCK_SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1Gr_T63Gbxqf-tFhCa7wM0s2PP0V_APGMdxKJiOBIvwc/export?format=csv&gid=1888649299';
         const MAX_FETCH = 300000; 
 
         let supabase, GLOBAL_DATA = [], charts = {};
@@ -268,7 +249,6 @@
             renderCostSettings();
         }
 
-        // EDIT 2: Added function to fetch new data specifically for Branch Analysis
         window.fetchBranchData = async () => {
             const s = document.getElementById('branchStart').value;
             const e = document.getElementById('branchEnd').value;
@@ -359,7 +339,7 @@
         window.filterDashByYear = (y) => { if(!y) return; setDash(`${y}-01-01`, `${y}-12-31`); };
         function setDash(s,e) { document.getElementById('dashStart').value=s; document.getElementById('dashEnd').value=e; fetchDataAndRender(); }
 
-        // --- BRANCH VIEW (FIXED BADGE) ---
+        // --- BRANCH VIEW ---
         function renderBranchView() {
             const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
             const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e);
@@ -390,7 +370,7 @@
             if(!error) { BRANCH_COSTS_CACHE = {}; data.forEach(c => BRANCH_COSTS_CACHE[c.branch_name] = {rent: c.rent, gp: c.gp_percent}); }
         }
 
-        // --- COST SETTINGS (FIXED HEIGHT) ---
+        // --- COST SETTINGS ---
         function renderCostSettings() {
             const branches = new Set(); GLOBAL_DATA.forEach(r => branches.add(r.branch_name || "Unknown"));
             const container = document.getElementById('costContainer'); container.innerHTML = '';
@@ -406,7 +386,7 @@
         window.saveCostCloud = async (br, type, val) => { const current = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0}; if(type === 'rent') current.rent = Number(val); if(type === 'gp') current.gp = Number(val); BRANCH_COSTS_CACHE[br] = current; await supabase.from(COST_TABLE).upsert({ branch_name: br, rent: current.rent, gp_percent: current.gp }, { onConflict: 'branch_name' }); };
         window.deleteCostCloud = async (br) => { if(!confirm("Reset?")) return; delete BRANCH_COSTS_CACHE[br]; renderCostSettings(); await supabase.from(COST_TABLE).delete().eq('branch_name', br); };
 
-        // --- COMPARE (REVAMPED TO LINE CHART + DROPDOWN) ---
+        // --- COMPARE ---
         window.setCompMonth = (period, val) => {
             if(!val) return;
             const [y, m] = val.split('-');
@@ -437,7 +417,6 @@
             document.getElementById('compValB').innerText = cur.format(rB.s); 
             document.getElementById('compQtyB').innerText = num.format(rB.q);
             
-            // --- DAILY DATA LOGIC FOR LINE CHART ---
             const mapDaily = (data) => {
                 const map = {};
                 data.forEach(r => {
@@ -511,7 +490,7 @@
             });
         };
 
-        // --- P&L (UPDATED GP DEDUCTION DISPLAY & SORTING) ---
+        // --- P&L (UPDATED RENT FORMULA) ---
         async function loadPnLMonth() {
             const m = document.getElementById('pnlMonth').value; if(!m) return;
             const [y, mo] = m.split('-'); const data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
@@ -532,7 +511,6 @@
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
                 let rows = ''; let total = 0;
                 
-                // SORTING: Extract number from branch name
                 const sortedEntries = Object.entries(report[grp]).sort((a,b) => {
                      const valA = parseInt(a[0].match(/^\d+/)?.[0] || "0");
                      const valB = parseInt(b[0].match(/^\d+/)?.[0] || "0");
@@ -544,12 +522,10 @@
                     const gpDed = d.s * (setting.gp / 100);
                     const profit = d.s - setting.rent - gpDed;
 
-                    // EDIT 3: Rent formula changed to (Sales - Rent) and color to slate-500
-                    const rentDedDisplay = setting.rent > 0 ? ` <span class="text-xs text-slate-500 ml-1">(${cur.format(d.s - setting.rent)})</span>` : '';
+                    // FIXED: Removed formula display from Rent column as requested
                     const gpDedDisplay = gpDed > 0 ? ` <span class="text-xs text-red-500 ml-1">(-${cur.format(gpDed)})</span>` : '';
 
-                    // EDIT 4: Added px-4 to the Net profit column
-                    rows += `<tr class="border-b hover:bg-slate-50 text-sm"><td class="py-2 px-4">${br}</td><td class="text-right font-mono">${cur.format(d.s)}</td><td class="text-right font-mono text-blue-600">${num.format(d.q)}</td><td class="text-right text-slate-500">${cur.format(setting.rent)}${rentDedDisplay}</td><td class="text-right text-slate-500">${setting.gp}%${gpDedDisplay}</td><td class="text-right font-bold font-mono ${profit>=0?'text-emerald-600':'text-red-600'} px-4">${cur.format(profit)}</td></tr>`;
+                    rows += `<tr class="border-b hover:bg-slate-50 text-sm"><td class="py-2 px-4">${br}</td><td class="text-right font-mono">${cur.format(d.s)}</td><td class="text-right font-mono text-blue-600">${num.format(d.q)}</td><td class="text-right text-slate-500">${cur.format(setting.rent)}</td><td class="text-right text-slate-500">${setting.gp}%${gpDedDisplay}</td><td class="text-right font-bold font-mono ${profit>=0?'text-emerald-600':'text-red-600'} px-4">${cur.format(profit)}</td></tr>`;
                 });
                 container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 mb-6 overflow-hidden"><div class="bg-${color}-50 px-6 py-3 font-bold text-${color}-800"><span>${grp} Group</span></div><table class="w-full"><thead><tr class="text-xs bg-slate-50 text-slate-500"><th class="text-left px-4 py-2">Branch</th><th class="text-right px-4">Sales</th><th class="text-right px-4">Qty</th><th class="text-right px-4">Rent</th><th class="text-right px-4">GP% (Deduction)</th><th class="text-right px-4">Net</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             });
@@ -579,6 +555,153 @@
             link.click();
         };
 
+        // --- NEW: SERVICE PLANNING ---
+        async function loadServicePlanning() {
+            showLoading(true, "Analyzing Stock...");
+            
+            // 1. Calculate Average Sales (Weekday vs Weekend) from GLOBAL_DATA
+            // Helper to count days in range
+            const start = new Date(document.getElementById('dashStart').value);
+            const end = new Date(document.getElementById('dashEnd').value);
+            let countWD = 0, countWE = 0;
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const day = d.getDay();
+                if (day === 0 || day === 6) countWE++; else countWD++;
+            }
+            if(countWD === 0) countWD = 1; // Prevent div by zero
+            if(countWE === 0) countWE = 1;
+
+            // Aggregation: Branch -> Type (Ink vs Paper) -> {wd: sum, we: sum}
+            const runRates = {}; 
+            
+            GLOBAL_DATA.forEach(r => {
+                const br = r.branch_name || "Unknown";
+                const isInk = (r.product || "").toUpperCase().includes("RIBBON");
+                const type = isInk ? "INK" : "PAPER";
+                const day = new Date(r.timestamp).getDay();
+                const isWE = (day === 0 || day === 6);
+                
+                if (!runRates[br]) runRates[br] = { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
+                
+                if (isWE) runRates[br][type].we += Number(r.quantity);
+                else runRates[br][type].wd += Number(r.quantity);
+            });
+
+            // 2. Fetch Google Sheet Stock
+            Papa.parse(STOCK_SHEET_CSV, {
+                download: true,
+                header: false,
+                complete: function(results) {
+                    const stockData = {}; // Branch -> {INK: qty, PAPER: qty}
+                    
+                    // Skip header (row 0), start from row 1
+                    // Col C (index 2) = Branch
+                    // Col F (index 5) = Product Name
+                    // Col G (index 6) = Qty
+                    results.data.forEach((row, idx) => {
+                        if (idx === 0) return; // Header
+                        if (!row[2] || !row[5]) return; // Invalid row
+
+                        const br = row[2].trim();
+                        const prod = row[5].trim().toUpperCase();
+                        const qty = parseInt(row[6] || 0);
+                        const isInk = prod.includes("RIBBON");
+                        const type = isInk ? "INK" : "PAPER";
+
+                        if (!stockData[br]) stockData[br] = { INK: 0, PAPER: 0 };
+                        stockData[br][type] += qty;
+                    });
+
+                    renderPlanningTable(runRates, stockData, countWD, countWE);
+                    showLoading(false);
+                },
+                error: function(err) {
+                    showLoading(false);
+                    alert("Failed to load Google Sheet: " + err.message);
+                }
+            });
+        }
+
+        function renderPlanningTable(runRates, stockData, daysWD, daysWE) {
+            const container = document.getElementById('planningContainer');
+            container.innerHTML = '';
+
+            const branches = new Set([...Object.keys(runRates), ...Object.keys(stockData)]);
+            const num = new Intl.NumberFormat('en-US', {maximumFractionDigits: 1});
+
+            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
+                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
+                const grpBranches = Array.from(branches).filter(b => getGroup(b) === grp).sort();
+                
+                if (grpBranches.length === 0) return;
+
+                let rows = '';
+                grpBranches.forEach(br => {
+                    // Match normalized names if possible, for now exact match
+                    const stock = stockData[br] || { INK: 0, PAPER: 0 };
+                    const sales = runRates[br] || { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
+
+                    // Calculate rates
+                    const calc = (type) => {
+                        const s = sales[type];
+                        const avgWD = s.wd / daysWD;
+                        const avgWE = s.we / daysWE;
+                        // Weighted average for "Days Remaining" prediction
+                        // (AvgWD * 5 + AvgWE * 2) / 7
+                        const weightedAvg = ((avgWD * 5) + (avgWE * 2)) / 7;
+                        const currentStock = stock[type];
+                        const daysLeft = weightedAvg > 0 ? (currentStock / weightedAvg) : 999;
+                        
+                        return { avgWD, avgWE, stock: currentStock, daysLeft };
+                    };
+
+                    const pPaper = calc('PAPER');
+                    const pInk = calc('INK');
+
+                    const getRowHtml = (label, data) => {
+                        const isCrit = data.daysLeft < 7;
+                        const isWarn = data.daysLeft >= 7 && data.daysLeft < 14;
+                        const style = isCrit ? 'critical-stock font-bold' : (isWarn ? 'warning-stock' : '');
+                        const dayText = data.daysLeft > 365 ? '> 1 Year' : Math.floor(data.daysLeft) + ' days';
+                        
+                        return `
+                            <tr class="border-b hover:bg-slate-50 text-xs">
+                                <td class="px-4 py-2 text-slate-500">${label}</td>
+                                <td class="px-4 py-2 text-right font-mono text-slate-800">${num.format(data.stock)}</td>
+                                <td class="px-4 py-2 text-right font-mono text-blue-600">${num.format(data.avgWD)}</td>
+                                <td class="px-4 py-2 text-right font-mono text-orange-600">${num.format(data.avgWE)}</td>
+                                <td class="px-4 py-2 text-right font-mono ${style}">${dayText}</td>
+                            </tr>
+                        `;
+                    };
+
+                    rows += `
+                        <tr class="bg-slate-50/50 border-b"><td colspan="5" class="px-4 py-1.5 font-bold text-slate-700 text-xs">${br}</td></tr>
+                        ${getRowHtml('Product (Paper)', pPaper)}
+                        ${getRowHtml('Ink (Ribbon)', pInk)}
+                    `;
+                });
+
+                container.innerHTML += `
+                    <div class="bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm">
+                        <div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm border-b border-${color}-100">${grp}</div>
+                        <table class="w-full">
+                            <thead class="bg-white text-[10px] uppercase text-slate-400 border-b">
+                                <tr>
+                                    <th class="text-left px-4 py-2">Type</th>
+                                    <th class="text-right px-4">Stock</th>
+                                    <th class="text-right px-4">Avg (Mon-Fri)</th>
+                                    <th class="text-right px-4">Avg (Sat-Sun)</th>
+                                    <th class="text-right px-4">Est. Days Left</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                `;
+            });
+        }
+
         window.openGroupModal = (grp) => {
             const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
             const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e && getGroup(r.branch_name) === grp);
@@ -594,7 +717,7 @@
         window.toggleRankingModal = () => { const m=document.getElementById('rankingModal'); m.classList.toggle('opacity-0'); m.classList.toggle('pointer-events-none'); document.body.classList.toggle('modal-active'); };
         window.closeModal = () => toggleRankingModal();
         window.switchTab = (t) => { 
-            ['dashboard', 'compare', 'pnl', 'branch', 'cost'].forEach(x => {
+            ['dashboard', 'compare', 'pnl', 'branch', 'cost', 'planning'].forEach(x => {
                 document.getElementById(`view-${x}`).classList.add('hidden');
                 document.getElementById(`nav-${x}`).classList.remove('active');
             }); 
@@ -602,7 +725,8 @@
             document.getElementById(`nav-${t}`).classList.add('active');
             if(t==='pnl') loadPnLMonth(); 
             if(t==='cost') renderCostSettings(); 
-            if(t==='branch') renderBranchView(); 
+            if(t==='branch') renderBranchView();
+            // planning is loaded manually via button to save resources or can be auto loaded here
         };
         function fillModalTable(id, obj, cur) { const html = Object.entries(obj).sort((a,b) => b[1]-a[1]).map(([k,v], i) => `<tr class="hover:bg-slate-50"><td class="p-2 text-slate-400">${i+1}</td><td class="p-2 truncate max-w-[200px]" title="${k}">${k}</td><td class="p-2 text-right font-mono">${cur.format(v)}</td></tr>`).join(''); document.getElementById(id).innerHTML = html; }
         
