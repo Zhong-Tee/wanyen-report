@@ -461,4 +461,67 @@
                 document.getElementById(prefix+'BranchTable').innerHTML = mkTable(g.branch);
             });
             
-            document.getElementById('rawD
+            document.getElementById('rawDataTableBody').innerHTML = data.slice(0,50).map(r => 
+                `<tr class="border-b hover:bg-slate-50"><td class="p-3">${r.transaction_date} ${r.transaction_time}</td><td class="p-3 truncate max-w-[150px]">${r.product}</td><td class="p-3 truncate max-w-[150px]">${r.branch_name}</td><td class="p-3 text-right">${r.quantity}</td><td class="p-3 text-right font-mono">${cur.format(r.total_amount)}</td></tr>`
+            ).join('');
+        }
+
+        function renderCharts(daily, weekly) {
+            const days = Object.keys(daily).sort();
+            const dData = days.map(d => daily[d]);
+            
+            if(charts.main) charts.main.destroy();
+            charts.main = new Chart(document.getElementById('mainChart'), {
+                type: 'line',
+                data: { labels: days, datasets: [{ label: 'Sales', data: dData, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true }] },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+            });
+
+            const wLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+            const rotData = [...weekly.slice(1), weekly[0]];
+            const rotLabels = [...wLabels.slice(1), wLabels[0]];
+
+            if(charts.week) charts.week.destroy();
+            charts.week = new Chart(document.getElementById('weeklyChart'), {
+                type: 'bar',
+                data: { labels: rotLabels, datasets: [{ data: rotData, backgroundColor: '#10b981', borderRadius: 4 }] },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}} }
+            });
+
+            document.getElementById('weekTable').innerHTML = rotLabels.map((d, i) => 
+                `<tr class="border-b"><td class="py-1 text-slate-600">${d}</td><td class="text-right font-mono">${new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'}).format(rotData[i])}</td></tr>`
+            ).join('');
+        }
+
+        document.getElementById('resetDbBtn').onclick = async () => {
+            if(!confirm("WARNING: This will delete ALL data in the database. Are you sure?")) return;
+            await supabase.from(TABLE).delete().neq('id', 0);
+            await supabase.from(LOG_TABLE).delete().neq('id', 0);
+            GLOBAL_DATA = []; loadAllDataAndFilter();
+            alert("Database Reset Complete");
+        };
+
+        function setDateRange(mode) {
+            const d = new Date();
+            if(mode === 'auto' && GLOBAL_DATA.length) {
+                const dates = GLOBAL_DATA.map(r => r.transaction_date).sort();
+                document.getElementById('startDate').value = dates[0];
+                document.getElementById('endDate').value = dates[dates.length-1];
+            } else if(mode === '1d') {
+                const today = d.toISOString().split('T')[0];
+                document.getElementById('startDate').value = today;
+                document.getElementById('endDate').value = today;
+            } else if(mode === '1m') {
+                const end = d.toISOString().split('T')[0];
+                d.setMonth(d.getMonth()-1);
+                const start = d.toISOString().split('T')[0];
+                document.getElementById('startDate').value = start;
+                document.getElementById('endDate').value = end;
+            }
+            if(GLOBAL_DATA.length) filterAndRender();
+        }
+        
+        document.getElementById('loadBtn').onclick = () => { GLOBAL_DATA.length ? filterAndRender() : loadAllDataAndFilter(); };
+    </script>
+</body>
+</html>
