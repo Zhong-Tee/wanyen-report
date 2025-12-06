@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.39 (Year Compare Fixed)</title>
+    <title>SalesPulse V.40 (Fix Compare Year & Ink Logic)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -150,7 +150,6 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-200">
                     <div class="flex justify-between items-center mb-4">
                         <h4 class="font-bold text-blue-800">Year A</h4>
-                        <!-- FIXED: Changed input to select -->
                         <select id="compYearA" class="text-xs border p-1 rounded w-24 bg-white"><option value="">Select Year</option></select>
                     </div>
                     <p class="text-3xl font-black text-slate-800" id="compYearValA">0.00</p>
@@ -159,7 +158,6 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200">
                     <div class="flex justify-between items-center mb-4">
                         <h4 class="font-bold text-orange-800">Year B</h4>
-                        <!-- FIXED: Changed input to select -->
                         <select id="compYearB" class="text-xs border p-1 rounded w-24 bg-white"><option value="">Select Year</option></select>
                     </div>
                     <p class="text-3xl font-black text-slate-800" id="compYearValB">0.00</p>
@@ -237,7 +235,6 @@
         let BRANCH_COSTS_CACHE = {};
 
         window.onload = async () => {
-            // FIXED: Init year pickers for all targets
             initYearPicker();
             const d = new Date().toISOString().split('T')[0];
             document.getElementById('dashStart').value = d;
@@ -271,14 +268,12 @@
             overlay.classList[show?'remove':'add']('hidden');
         }
 
-        // FIXED: Updated initYearPicker to populate all year dropdowns
         function initYearPicker() {
             const targets = ['dashYearPicker', 'compYearA', 'compYearB'];
             const y = new Date().getFullYear();
             targets.forEach(id => {
                 const el = document.getElementById(id);
                 if(!el) return;
-                // Keep default option
                 const defaultText = el.firstElementChild.innerText;
                 el.innerHTML = `<option value="">${defaultText}</option>`;
                 for(let i=y; i>=y-5; i--){
@@ -337,9 +332,7 @@
         function renderDashboard() {
             let sum=0, qty=0;
             const groups = {'Moshi': {sum:0, qty:0}, 'B2S': {sum:0, qty:0}, 'Wanyen': {sum:0, qty:0}};
-            // For Profit Calculation
             const groupProfit = {'Moshi': 0, 'B2S': 0, 'Wanyen': 0};
-            // Group Sales Temp for accurate Profit calc
             const branchSales = {};
 
             const dailyStats = {}, weeklyStats = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
@@ -354,7 +347,6 @@
                 sum+=v; qty+=q;
                 groups[g].sum+=v; groups[g].qty+=q;
                 
-                // Aggregate sales per branch for profit calc
                 if(!branchSales[brName]) branchSales[brName] = {sum:0, group:g};
                 branchSales[brName].sum += v;
 
@@ -365,7 +357,6 @@
                 globalBranch[r.branch_name||"?"] = (globalBranch[r.branch_name||"?"]||0)+v;
             });
 
-            // Calculate Profit
             Object.entries(branchSales).forEach(([br, data]) => {
                 const setting = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0};
                 const gpDed = data.sum * (setting.gp / 100);
@@ -389,7 +380,6 @@
                 container.innerHTML += `<div class="group-card bg-white rounded-xl border border-${color}-200 p-4 shadow-sm hover:shadow-md transition-all"><div class="flex justify-between items-center mb-3 pb-2 border-b border-${color}-100"><span class="font-bold text-${color}-700 text-lg">${grp}</span></div><div class="grid grid-cols-3 gap-2 text-center"><div><p class="text-[10px] text-slate-400 font-bold uppercase">Sales</p><p class="font-bold text-slate-800">${cur.format(d.sum)}</p></div><div class="border-l border-r border-slate-100"><p class="text-[10px] text-slate-400 font-bold uppercase">Sheets</p><p class="font-bold text-slate-800">${num.format(d.qty)}</p></div><div><p class="text-[10px] text-slate-400 font-bold uppercase">Avg</p><p class="font-bold text-slate-800">${cur.format(d.qty ? d.sum/d.qty : 0)}</p></div></div></div>`;
             });
 
-            // Render Profit Summary
             const profitContainer = document.getElementById('profitSummaryContainer');
             profitContainer.innerHTML = '';
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
@@ -560,69 +550,80 @@
             charts.compQty = new Chart(document.getElementById('compareQtyChart').getContext('2d'), { type: 'line', data: { labels: labels, datasets: [ { label: 'Period A', data: dataQA, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3 }, { label: 'Period B', data: dataQB, borderColor: '#fdba74', backgroundColor: '#fdba74', tension: 0.3 } ] }, options: lineOpts('qty') });
         };
 
-        // --- COMPARE YEAR (FIXED) ---
+        // --- COMPARE YEAR (FIXED WITH TRY-CATCH) ---
         window.runCompareYear = async () => {
             const yA = document.getElementById('compYearA').value;
             const yB = document.getElementById('compYearB').value;
+            
             if (!yA || !yB) return alert("Please select both years.");
 
-            const sA = `${yA}-01-01`;
-            const eA = `${yA}-12-31`;
-            const sB = `${yB}-01-01`;
-            const eB = `${yB}-12-31`;
+            showLoading(true, "Comparing Years..."); // Show loading manually
 
-            const dA = await fetchData(sA, eA);
-            const dB = await fetchData(sB, eB);
+            try {
+                const sA = `${yA}-01-01`;
+                const eA = `${yA}-12-31`;
+                const sB = `${yB}-01-01`;
+                const eB = `${yB}-12-31`;
 
-            const calcTotal = d => d.reduce((a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}), {s:0,q:0});
-            const rA = calcTotal(dA);
-            const rB = calcTotal(dB);
+                const dA = await fetchData(sA, eA);
+                const dB = await fetchData(sB, eB);
 
-            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
-            const num = new Intl.NumberFormat('en-US');
+                const calcTotal = d => d.reduce((a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}), {s:0,q:0});
+                const rA = calcTotal(dA);
+                const rB = calcTotal(dB);
 
-            document.getElementById('compYearValA').innerText = cur.format(rA.s);
-            document.getElementById('compYearQtyA').innerText = num.format(rA.q);
-            document.getElementById('compYearValB').innerText = cur.format(rB.s);
-            document.getElementById('compYearQtyB').innerText = num.format(rB.q);
+                const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
+                const num = new Intl.NumberFormat('en-US');
 
-            const mapMonthly = (data) => {
-                const map = {};
-                data.forEach(r => {
-                    const key = r.transaction_date.slice(0,7); // YYYY-MM
-                    if (!map[key]) map[key] = {s:0, q:0};
-                    map[key].s += Number(r.total_amount);
-                    map[key].q += Number(r.quantity);
+                document.getElementById('compYearValA').innerText = cur.format(rA.s);
+                document.getElementById('compYearQtyA').innerText = num.format(rA.q);
+                document.getElementById('compYearValB').innerText = cur.format(rB.s);
+                document.getElementById('compYearQtyB').innerText = num.format(rB.q);
+
+                const mapMonthly = (data) => {
+                    const map = {};
+                    data.forEach(r => {
+                        const key = r.transaction_date.slice(0,7); // YYYY-MM
+                        if (!map[key]) map[key] = {s:0, q:0};
+                        map[key].s += Number(r.total_amount);
+                        map[key].q += Number(r.quantity);
+                    });
+                    return map;
+                };
+
+                const mapA = mapMonthly(dA);
+                const mapB = mapMonthly(dB);
+                const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                const dataSA = [], dataSB = [], dataQA = [], dataQB = [];
+
+                for (let m = 1; m <= 12; m++) {
+                    const mm = String(m).padStart(2, '0');
+                    const keyA = `${yA}-${mm}`;
+                    const keyB = `${yB}-${mm}`;
+                    dataSA.push(mapA[keyA]?.s || 0);
+                    dataSB.push(mapB[keyB]?.s || 0);
+                    dataQA.push(mapA[keyA]?.q || 0);
+                    dataQB.push(mapB[keyB]?.q || 0);
+                }
+
+                if (charts.compYearSales) charts.compYearSales.destroy();
+                if (charts.compYearQty) charts.compYearQty.destroy();
+
+                const lineOpts = (type) => ({ 
+                    responsive: true, maintainAspectRatio: false, 
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'top' }, datalabels: { display: true, align: 'end', anchor: 'end', color: (ctx) => ctx.datasetIndex === 0 ? '#3b82f6' : '#f97316', font: { size: 10, weight: 'bold' }, formatter: (val) => { if (val === 0) return ''; if (type === 'sales') return new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits:0}).format(val); return new Intl.NumberFormat('en-US').format(val) + ' Sheets'; } } }, scales: { y: { beginAtZero: true } }
                 });
-                return map;
-            };
 
-            const mapA = mapMonthly(dA);
-            const mapB = mapMonthly(dB);
-            const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            const dataSA = [], dataSB = [], dataQA = [], dataQB = [];
+                charts.compYearSales = new Chart(document.getElementById('compareYearSalesChart').getContext('2d'), { type: 'line', data: { labels: monthLabels, datasets: [ { label: `Year ${yA}`, data: dataSA, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3 }, { label: `Year ${yB}`, data: dataSB, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 } ] }, options: lineOpts('sales') });
+                charts.compYearQty = new Chart(document.getElementById('compareYearQtyChart').getContext('2d'), { type: 'line', data: { labels: monthLabels, datasets: [ { label: `Year ${yA}`, data: dataQA, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3 }, { label: `Year ${yB}`, data: dataQB, borderColor: '#fdba74', backgroundColor: '#fdba74', tension: 0.3 } ] }, options: lineOpts('qty') });
 
-            for (let m = 1; m <= 12; m++) {
-                const mm = String(m).padStart(2, '0');
-                const keyA = `${yA}-${mm}`;
-                const keyB = `${yB}-${mm}`;
-                dataSA.push(mapA[keyA]?.s || 0);
-                dataSB.push(mapB[keyB]?.s || 0);
-                dataQA.push(mapA[keyA]?.q || 0);
-                dataQB.push(mapB[keyB]?.q || 0);
+            } catch (err) {
+                console.error(err);
+                alert("Error comparing years: " + err.message);
+            } finally {
+                showLoading(false); // Ensure loading is closed
             }
-
-            if (charts.compYearSales) charts.compYearSales.destroy();
-            if (charts.compYearQty) charts.compYearQty.destroy();
-
-            const lineOpts = (type) => ({ 
-                responsive: true, maintainAspectRatio: false, 
-                interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { position: 'top' }, datalabels: { display: true, align: 'end', anchor: 'end', color: (ctx) => ctx.datasetIndex === 0 ? '#3b82f6' : '#f97316', font: { size: 10, weight: 'bold' }, formatter: (val) => { if (val === 0) return ''; if (type === 'sales') return new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits:0}).format(val); return new Intl.NumberFormat('en-US').format(val) + ' Sheets'; } } }, scales: { y: { beginAtZero: true } }
-            });
-
-            charts.compYearSales = new Chart(document.getElementById('compareYearSalesChart').getContext('2d'), { type: 'line', data: { labels: monthLabels, datasets: [ { label: `Year ${yA}`, data: dataSA, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3 }, { label: `Year ${yB}`, data: dataSB, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 } ] }, options: lineOpts('sales') });
-            charts.compYearQty = new Chart(document.getElementById('compareYearQtyChart').getContext('2d'), { type: 'line', data: { labels: monthLabels, datasets: [ { label: `Year ${yA}`, data: dataQA, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3 }, { label: `Year ${yB}`, data: dataQB, borderColor: '#fdba74', backgroundColor: '#fdba74', tension: 0.3 } ] }, options: lineOpts('qty') });
         };
 
         // --- P&L ---
@@ -794,8 +795,20 @@
                         return { type, code, stock: currentStock, avgWD, avgWE, daysLeft };
                     };
 
-                    tableData.push({ branch: item.name, ...calc('PAPER') });
-                    tableData.push({ branch: item.name, ...calc('INK') });
+                    // FIXED: Ink Logic Update
+                    const paperCalc = calc('PAPER');
+                    const inkCalc = calc('INK');
+
+                    // Override Ink Sales with Paper Sales (Since they are consumed together)
+                    inkCalc.avgWD = paperCalc.avgWD;
+                    inkCalc.avgWE = paperCalc.avgWE;
+                    
+                    // Recalculate Ink Days Left based on Paper Run Rate
+                    const weightAvgInk = ((inkCalc.avgWD * 5) + (inkCalc.avgWE * 2)) / 7;
+                    inkCalc.daysLeft = weightAvgInk > 0 ? (inkCalc.stock / weightAvgInk) : 999;
+
+                    tableData.push({ branch: item.name, ...paperCalc });
+                    tableData.push({ branch: item.name, ...inkCalc });
                 });
 
                 tableData.sort((a,b) => a.daysLeft - b.daysLeft);
