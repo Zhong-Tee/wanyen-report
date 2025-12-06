@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.35 (Real-time Stock)</title>
+    <title>SalesPulse V.38 (BranchID & Profit Sum)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,10 +22,9 @@
         body.modal-active { overflow: hidden; }
         #loadingOverlay { backdrop-filter: blur(2px); background: rgba(255,255,255,0.8); }
         
-        /* Stock Status Colors */
-        .stock-critical { background-color: #fee2e2; color: #b91c1c; font-weight: bold; } /* Red < 7 */
-        .stock-warning { background-color: #ffedd5; color: #c2410c; font-weight: bold; } /* Orange < 14 */
-        .stock-good { background-color: #dcfce7; color: #15803d; font-weight: bold; } /* Green >= 14 */
+        .stock-critical { background-color: #fee2e2; color: #b91c1c; font-weight: bold; }
+        .stock-warning { background-color: #ffedd5; color: #c2410c; font-weight: bold; }
+        .stock-good { background-color: #dcfce7; color: #15803d; font-weight: bold; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex overflow-hidden">
@@ -45,7 +44,6 @@
             <button onclick="switchTab('cost')" id="nav-cost" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Branch Cost</button>
             <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Sales Compare</button>
             <button onclick="switchTab('pnl')" id="nav-pnl" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Profit & Loss</button>
-            <!-- NEW MENU: Service Planning -->
             <button onclick="switchTab('planning')" id="nav-planning" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
                 Service Planning
@@ -109,6 +107,13 @@
                 <div class="flex justify-between items-center mb-6"><h3 class="text-lg font-bold text-slate-800">Branch Group Analysis</h3></div>
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="groupCardsContainer"></div>
             </div>
+            <!-- PROFIT SUMMARY -->
+            <div class="mt-8">
+                <h3 class="text-lg font-bold text-slate-800 mb-4">Profit & Loss Summary (Estimated)</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="profitSummaryContainer">
+                    <!-- Profit cards will be injected here -->
+                </div>
+            </div>
         </div>
 
         <!-- 2. BRANCH ANALYSIS -->
@@ -146,17 +151,20 @@
             <div id="pnlContainer" class="space-y-8 pb-12"></div>
         </div>
 
-        <!-- 6. SERVICE PLANNING (REAL-TIME STOCK) -->
+        <!-- 6. SERVICE PLANNING -->
         <div id="view-planning" class="hidden fade-in space-y-8">
             <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div>
                     <h2 class="text-3xl font-bold text-slate-900">Service Planning</h2>
-                    <p class="text-sm text-slate-500 mt-1">Real-time stock analysis from database compared with average sales.</p>
+                    <p class="text-sm text-slate-500 mt-1">Real-time stock analysis matching by Branch ID.</p>
                 </div>
-                <button onclick="loadServicePlanning()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-indigo-700 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    Refresh Analysis
-                </button>
+                <div class="flex items-center gap-3">
+                    <input type="text" id="planningSearch" onkeyup="filterPlanningTable()" placeholder="Search anything..." class="border px-3 py-2 rounded text-sm w-64 shadow-sm">
+                    <button onclick="loadServicePlanning()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-indigo-700 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Refresh
+                    </button>
+                </div>
             </div>
             <div id="planningContainer" class="space-y-8 pb-12"></div>
         </div>
@@ -183,7 +191,7 @@
         const TABLE = 'sales_records';
         const LOG_TABLE = 'upload_logs';
         const COST_TABLE = 'branch_costs';
-        const STOCK_TABLE = 'current_stocks'; // NEW
+        const STOCK_TABLE = 'current_stocks'; 
         const MAX_FETCH = 300000; 
 
         let supabase, GLOBAL_DATA = [], charts = {};
@@ -270,6 +278,11 @@
         function renderDashboard() {
             let sum=0, qty=0;
             const groups = {'Moshi': {sum:0, qty:0}, 'B2S': {sum:0, qty:0}, 'Wanyen': {sum:0, qty:0}};
+            // For Profit Calculation
+            const groupProfit = {'Moshi': 0, 'B2S': 0, 'Wanyen': 0};
+            // Group Sales Temp for accurate Profit calc
+            const branchSales = {};
+
             const dailyStats = {}, weeklyStats = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
             const globalProd = {}, globalBranch = {};
 
@@ -277,13 +290,28 @@
                 const v = Number(r.total_amount)||0;
                 const q = Number(r.quantity)||0;
                 const g = getGroup(r.branch_name);
+                const brName = r.branch_name || "Unknown";
+
                 sum+=v; qty+=q;
                 groups[g].sum+=v; groups[g].qty+=q;
+                
+                // Aggregate sales per branch for profit calc
+                if(!branchSales[brName]) branchSales[brName] = {sum:0, group:g};
+                branchSales[brName].sum += v;
+
                 dailyStats[r.transaction_date] = (dailyStats[r.transaction_date]||0)+v;
                 const dayIdx = new Date(r.timestamp).getDay();
                 weeklyStats[dayIdx] += v;
                 globalProd[r.product||"?"] = (globalProd[r.product||"?"]||0)+v;
                 globalBranch[r.branch_name||"?"] = (globalBranch[r.branch_name||"?"]||0)+v;
+            });
+
+            // Calculate Profit
+            Object.entries(branchSales).forEach(([br, data]) => {
+                const setting = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0};
+                const gpDed = data.sum * (setting.gp / 100);
+                const net = data.sum - setting.rent - gpDed;
+                if(groupProfit[data.group] !== undefined) groupProfit[data.group] += net;
             });
 
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
@@ -300,6 +328,24 @@
                 const d = groups[grp];
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
                 container.innerHTML += `<div class="group-card bg-white rounded-xl border border-${color}-200 p-4 shadow-sm hover:shadow-md transition-all"><div class="flex justify-between items-center mb-3 pb-2 border-b border-${color}-100"><span class="font-bold text-${color}-700 text-lg">${grp}</span></div><div class="grid grid-cols-3 gap-2 text-center"><div><p class="text-[10px] text-slate-400 font-bold uppercase">Sales</p><p class="font-bold text-slate-800">${cur.format(d.sum)}</p></div><div class="border-l border-r border-slate-100"><p class="text-[10px] text-slate-400 font-bold uppercase">Sheets</p><p class="font-bold text-slate-800">${num.format(d.qty)}</p></div><div><p class="text-[10px] text-slate-400 font-bold uppercase">Avg</p><p class="font-bold text-slate-800">${cur.format(d.qty ? d.sum/d.qty : 0)}</p></div></div></div>`;
+            });
+
+            // Render Profit Summary
+            const profitContainer = document.getElementById('profitSummaryContainer');
+            profitContainer.innerHTML = '';
+            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
+                const profit = groupProfit[grp];
+                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
+                const isPos = profit >= 0;
+                profitContainer.innerHTML += `
+                    <div class="bg-white p-6 rounded-xl border border-${color}-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-${color}-700 text-lg">${grp}</h4>
+                            <span class="text-xs text-slate-400 uppercase">Net Profit</span>
+                        </div>
+                        <p class="text-2xl font-black ${isPos?'text-emerald-600':'text-red-600'}">${cur.format(profit)}</p>
+                    </div>
+                `;
             });
 
             fillModalTable('modalProdBody', globalProd, cur);
@@ -343,7 +389,7 @@
         window.filterDashByYear = (y) => { if(!y) return; setDash(`${y}-01-01`, `${y}-12-31`); };
         function setDash(s,e) { document.getElementById('dashStart').value=s; document.getElementById('dashEnd').value=e; fetchDataAndRender(); }
 
-        // --- BRANCH VIEW (FIXED BADGE) ---
+        // --- BRANCH VIEW ---
         function renderBranchView() {
             const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
             const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e);
@@ -576,23 +622,28 @@
             if(countWE === 0) countWE = 1;
 
             const runRates = {}; 
-            // Normalize helper
-            const normalize = (str) => (str || "").trim().toUpperCase().replace(/\s+/g, ' ');
+            // Helper to get Branch ID from name
+            const getBranchId = (name) => {
+                const match = (name || "").match(/^\d+/);
+                return match ? parseInt(match[0]) : null;
+            };
 
             GLOBAL_DATA.forEach(r => {
-                const br = normalize(r.branch_name);
+                const brId = getBranchId(r.branch_name);
+                if(!brId) return;
+
                 const isInk = (r.product || "").toUpperCase().includes("RIBBON");
                 const type = isInk ? "INK" : "PAPER";
                 const day = new Date(r.timestamp).getDay();
                 const isWE = (day === 0 || day === 6);
                 
-                if (!runRates[br]) runRates[br] = { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
+                if (!runRates[brId]) runRates[brId] = { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
                 
-                if (isWE) runRates[br][type].we += Number(r.quantity);
-                else runRates[br][type].wd += Number(r.quantity);
+                if (isWE) runRates[brId][type].we += Number(r.quantity);
+                else runRates[brId][type].wd += Number(r.quantity);
             });
 
-            // 2. Fetch Stock from Supabase (current_stocks)
+            // 2. Fetch Stock from Supabase (current_stocks) using branch_id
             const { data: stockRows, error } = await supabase.from(STOCK_TABLE).select('*');
             
             if (error) {
@@ -600,19 +651,21 @@
                 return alert("Error fetching stock: " + error.message);
             }
 
-            const stockData = {}; // Branch -> {INK: qty, PAPER: qty}
+            const stockData = {}; // BranchID -> {Name, INK: qty, PAPER: qty}
             stockRows.forEach(row => {
-                const br = normalize(row.branch_name);
+                const brId = row.branch_id; // Using actual DB column
+                if (!brId) return;
+
                 const prod = (row.product_name || "").toUpperCase();
                 const qty = Number(row.quantity || 0);
                 const isInk = prod.includes("RIBBON") || prod.includes("INK");
                 const type = isInk ? "INK" : "PAPER";
 
-                if (!stockData[br]) stockData[br] = { INK: 0, PAPER: 0 };
-                stockData[br][type] += qty;
+                if (!stockData[brId]) stockData[brId] = { name: row.branch_name, INK: 0, PAPER: 0 };
+                stockData[brId][type] += qty;
             });
 
-            renderPlanningTable(runRates, stockData, countWD, countWE);
+            renderPlanningTable(runRates, stockData, daysWD, daysWE);
             showLoading(false);
         }
 
@@ -620,66 +673,66 @@
             const container = document.getElementById('planningContainer');
             container.innerHTML = '';
 
-            const branches = new Set([...Object.keys(runRates), ...Object.keys(stockData)]);
+            const allIds = new Set([...Object.keys(runRates), ...Object.keys(stockData)]);
             const num = new Intl.NumberFormat('en-US', {maximumFractionDigits: 1});
 
-            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
-                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                // Filter branches by group
-                const grpBranches = Array.from(branches).filter(b => getGroup(b) === grp);
-                
-                if (grpBranches.length === 0) return;
+            const groupedData = {'Moshi': [], 'B2S': [], 'Wanyen': []};
 
+            allIds.forEach(id => {
+                const name = stockData[id]?.name || `Branch ${id}`;
+                const group = getGroup(name);
+                if (groupedData[group]) groupedData[group].push({ id, name });
+            });
+
+            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
+                const items = groupedData[grp];
+                if (items.length === 0) return;
+
+                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
                 const tableData = [];
 
-                grpBranches.forEach(br => {
-                    const stock = stockData[br] || { INK: 0, PAPER: 0 };
-                    const sales = runRates[br] || { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
+                items.forEach(item => {
+                    const id = item.id;
+                    const stock = stockData[id] || { INK: 0, PAPER: 0 };
+                    const sales = runRates[id] || { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
 
                     const calc = (type) => {
                         const s = sales[type];
                         const avgWD = s.wd / daysWD;
                         const avgWE = s.we / daysWE;
-                        // Weighted Avg: ((AvgWD * 5) + (AvgWE * 2)) / 7
                         const weightedAvg = ((avgWD * 5) + (avgWE * 2)) / 7;
                         const currentStock = stock[type];
-                        // Days Left
                         const daysLeft = weightedAvg > 0 ? (currentStock / weightedAvg) : 999;
                         return { type, stock: currentStock, avgWD, avgWE, daysLeft };
                     };
 
-                    tableData.push({ branch: br, ...calc('PAPER') });
-                    tableData.push({ branch: br, ...calc('INK') });
+                    tableData.push({ branch: item.name, ...calc('PAPER') });
+                    tableData.push({ branch: item.name, ...calc('INK') });
                 });
 
-                // SORTING: Critical (lowest days left) first
                 tableData.sort((a,b) => a.daysLeft - b.daysLeft);
 
                 let rows = '';
-                tableData.forEach(item => {
-                    const isCrit = item.daysLeft < 7;
-                    const isWarn = item.daysLeft >= 7 && item.daysLeft < 14;
+                tableData.forEach(rowItem => {
+                    const isCrit = rowItem.daysLeft < 7;
+                    const isWarn = rowItem.daysLeft >= 7 && rowItem.daysLeft < 14;
                     const styleClass = isCrit ? 'stock-critical' : (isWarn ? 'stock-warning' : 'stock-good');
-                    
-                    const dayText = item.daysLeft > 365 ? '> 1 Year' : item.daysLeft.toFixed(1) + ' Days';
-                    
-                    // Branch Name Display (Original casing recovery is hard due to normalization, using stored key)
-                    // We normalized keys, so display is normalized. 
-                    
+                    const dayText = rowItem.daysLeft > 365 ? '> 1 Year' : rowItem.daysLeft.toFixed(1) + ' Days';
+
                     rows += `
-                        <tr class="border-b hover:bg-slate-50 text-xs">
-                            <td class="px-4 py-2 font-medium text-slate-700">${item.branch}</td>
-                            <td class="px-4 py-2 text-slate-500">${item.type}</td>
-                            <td class="px-4 py-2 text-right font-mono text-slate-800">${num.format(item.stock)}</td>
-                            <td class="px-4 py-2 text-right font-mono text-blue-600">${num.format(item.avgWD)}</td>
-                            <td class="px-4 py-2 text-right font-mono text-orange-600">${num.format(item.avgWE)}</td>
+                        <tr class="border-b hover:bg-slate-50 text-xs planning-row">
+                            <td class="px-4 py-2 font-medium text-slate-700">${rowItem.branch}</td>
+                            <td class="px-4 py-2 text-slate-500">${rowItem.type}</td>
+                            <td class="px-4 py-2 text-right font-mono text-slate-800">${num.format(rowItem.stock)}</td>
+                            <td class="px-4 py-2 text-right font-mono text-blue-600">${num.format(rowItem.avgWD)}</td>
+                            <td class="px-4 py-2 text-right font-mono text-orange-600">${num.format(rowItem.avgWE)}</td>
                             <td class="px-4 py-2 text-center font-mono text-xs rounded border ${styleClass}">${dayText}</td>
                         </tr>
                     `;
                 });
 
                 container.innerHTML += `
-                    <div class="bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm">
+                    <div class="bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm planning-card">
                         <div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm border-b border-${color}-100 flex justify-between">
                             <span>${grp}</span>
                             <span class="text-[10px] bg-white px-2 rounded border border-${color}-200 opacity-70">Sorted by Days Left</span>
@@ -703,6 +756,27 @@
                 `;
             });
         }
+
+        // NEW: Search Filter for Planning
+        window.filterPlanningTable = () => {
+            const input = document.getElementById("planningSearch").value.toUpperCase();
+            const cards = document.querySelectorAll(".planning-card");
+            
+            cards.forEach(card => {
+                const rows = card.querySelectorAll(".planning-row");
+                let hasVisibleRow = false;
+                rows.forEach(row => {
+                    const text = row.innerText.toUpperCase();
+                    if (text.indexOf(input) > -1) {
+                        row.style.display = "";
+                        hasVisibleRow = true;
+                    } else {
+                        row.style.display = "none";
+                    }
+                });
+                card.style.display = hasVisibleRow ? "" : "none";
+            });
+        };
 
         window.openGroupModal = (grp) => {
             const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
@@ -733,12 +807,45 @@
         
         function setupEventListeners() {
              document.getElementById('globalImportBtn').onclick=()=>document.getElementById('globalCsvInput').click();
+             // UPDATE: Transform with branch_id
              document.getElementById('globalCsvInput').onchange=async(e)=>{ const files=e.target.files; if(!files.length) return; showLoading(true); for(let i=0;i<files.length;i++){ const f=files[i]; const {data:exists}=await supabase.from(LOG_TABLE).select('*').eq('filename',f.name).single(); if(exists){alert("File exists!");continue;} await new Promise(r=>Papa.parse(f,{header:false,skipEmptyLines:true,complete:async(res)=>{ const rows=res.data.map(transform).filter(x=>x); const batch=500; for(let j=0;j<Math.ceil(rows.length/batch);j++) await supabase.from(TABLE).insert(rows.slice(j*batch,(j+1)*batch)); await supabase.from(LOG_TABLE).insert({filename:f.name, total_rows:rows.length}); r(); }})); } showLoading(false); alert("Done"); fetchDataAndRender(); };
              document.getElementById('deleteByFileBtn').onclick=()=>document.getElementById('deleteFileInput').click();
              document.getElementById('deleteFileInput').onchange=async(e)=>{ const f=e.target.files[0]; if(!f||!confirm("Delete?")) return; showLoading(true); Papa.parse(f, {header:false, skipEmptyLines:true, complete:async(res)=>{ const rows=res.data.map(transform).filter(x=>x); const batch=50; for(let j=0;j<Math.ceil(rows.length/batch);j++) { const chunk=rows.slice(j*batch,(j+1)*batch); await Promise.all(chunk.map(r=>supabase.from(TABLE).delete().match({transaction_date:r.transaction_date, transaction_time:r.transaction_time, branch_name:r.branch_name, total_amount:r.total_amount}))); } await supabase.from(LOG_TABLE).delete().eq('filename',f.name); showLoading(false); alert("Deleted"); fetchDataAndRender(); }}); };
-             document.getElementById('globalResetBtn').onclick=async()=>{ if(confirm("Reset DB?")) { await supabase.from(TABLE).delete().neq('id',0); await supabase.from(LOG_TABLE).delete().neq('id',0); alert("Cleared"); location.reload(); } };
+             // UPDATE: Passcode Reset
+             document.getElementById('globalResetBtn').onclick=async()=>{ 
+                 const pass = prompt("Enter passcode to reset DB:");
+                 if(pass === "001") {
+                     if(confirm("Are you sure? This will wipe all data.")) { await supabase.from(TABLE).delete().neq('id',0); await supabase.from(LOG_TABLE).delete().neq('id',0); alert("Cleared"); location.reload(); } 
+                 } else { alert("Wrong passcode!"); }
+             };
         }
-        function transform(row) { if(row.length<11) return null; const [d,t]=(row[1]||"").trim().split(" "); if(!d) return null; const ds=d.split("/"); if(ds.length!==3) return null; let y=parseInt(ds[2]); if(y>2400) y-=543; const iso=`${y}-${ds[1].padStart(2,'0')}-${ds[0].padStart(2,'0')}`; let time=t||"00:00:00"; time=time.split(':').map(x=>x.padStart(2,'0')).join(':'); return { timestamp: new Date(`${iso}T${time}`).toISOString(), transaction_date: iso, transaction_time: time, product: (row[3]||"").trim(), quantity: parseInt(row[9]||0), price_per_sheet: 0, total_amount: parseFloat((row[10]||"0").replace(/,/g, "")), payment_type: (row[11]||"").trim(), branch_name: (row[14]||"").trim() }; }
+        
+        // UPDATE: Transform logic to extract branch_id
+        function transform(row) { 
+            if(row.length<11) return null; 
+            const [d,t]=(row[1]||"").trim().split(" "); if(!d) return null; 
+            const ds=d.split("/"); if(ds.length!==3) return null; 
+            let y=parseInt(ds[2]); if(y>2400) y-=543; 
+            const iso=`${y}-${ds[1].padStart(2,'0')}-${ds[0].padStart(2,'0')}`; 
+            let time=t||"00:00:00"; time=time.split(':').map(x=>x.padStart(2,'0')).join(':'); 
+            const branchName = (row[14]||"").trim();
+            // Extract ID
+            const match = branchName.match(/^\d+/);
+            const brId = match ? parseInt(match[0]) : null;
+
+            return { 
+                timestamp: new Date(`${iso}T${time}`).toISOString(), 
+                transaction_date: iso, 
+                transaction_time: time, 
+                product: (row[3]||"").trim(), 
+                quantity: parseInt(row[9]||0), 
+                price_per_sheet: 0, 
+                total_amount: parseFloat((row[10]||"0").replace(/,/g, "")), 
+                payment_type: (row[11]||"").trim(), 
+                branch_name: branchName,
+                branch_id: brId // New Column
+            }; 
+        }
     </script>
 </body>
 </html>
