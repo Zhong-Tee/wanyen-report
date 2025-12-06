@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.44 (Fixed Dashboard + Progress)</title>
+    <title>SalesPulse V.44 (Fixed Connection)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -280,11 +280,12 @@
 
             try {
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                // Check connection
                 const { count, error } = await supabase.from(TABLE).select('*', { count: 'exact', head: true });
                 if(!error) {
                     updateStatus(true, count);
                     setupEventListeners();
-                    await fetchDataAndRender();
+                    await fetchDataAndRender(); // Load initial data
                     await loadCostData();
                 } else {
                     updateStatus(false, error.message);
@@ -614,6 +615,40 @@
             return colors[Math.abs(hash) % colors.length];
         }
 
+        // CSV Export Logic
+        window.toggleSelectAll = (source) => {
+            const checkboxes = source.closest('table').querySelectorAll('.row-select');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        window.downloadSelectedPlanning = () => {
+            const selected = [];
+            document.querySelectorAll('.row-select:checked').forEach(cb => {
+                const [idStr, type] = cb.dataset.id.split('-');
+                const id = parseInt(idStr);
+                const item = CURRENT_PLAN_DATA.find(d => d.id === id && d.type === type);
+                if(item) selected.push(item);
+            });
+            if(selected.length === 0) return alert("Please select items to export.");
+            
+            const csvData = selected.map(i => ({
+                Branch: i.branch,
+                Zone: i.zone,
+                Type: i.type,
+                Code: i.code || "",
+                Stock: i.stock,
+                Avg_Weekday: i.avgWD.toFixed(2),
+                Avg_Weekend: i.avgWE.toFixed(2),
+                Days_Left: i.daysLeft.toFixed(1)
+            }));
+            const csv = Papa.unparse(csvData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Service_Plan_Selected.csv`;
+            link.click();
+        }
+
         async function loadServicePlanning() {
             showLoading(true, "Analyzing Stock...");
             
@@ -629,10 +664,8 @@
             if(countWE === 0) countWE = 1;
 
             const runRates = {}; 
-            const getBranchId = (name) => {
-                const match = (name || "").match(/^\d+/);
-                return match ? parseInt(match[0]) : null;
-            };
+            const getBranchId = (name) => { const match = (name || "").match(/^\d+/); return match ? parseInt(match[0]) : null; };
+            const cleanBranchName = (name) => { return (name || "").replace(/\s\d{1,2}:\d{2}$/, '').trim(); };
 
             GLOBAL_DATA.forEach(r => {
                 const brId = getBranchId(r.branch_name);
@@ -640,21 +673,21 @@
 
                 const isInk = (r.product || "").toUpperCase().includes("RIBBON");
                 const type = isInk ? "INK" : "PAPER";
-                
                 const day = new Date(r.transaction_date).getUTCDay(); 
                 const isWE = (day === 0 || day === 6);
                 
-                if (!runRates[brId]) runRates[brId] = { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
+                if (!runRates[brId]) runRates[brId] = { 
+                    name: cleanBranchName(r.branch_name), 
+                    INK: {wd:0, we:0}, 
+                    PAPER: {wd:0, we:0} 
+                };
                 
                 if (isWE) runRates[brId][type].we += Number(r.quantity);
                 else runRates[brId][type].wd += Number(r.quantity);
             });
 
             const { data: stockRows, error } = await supabase.from(STOCK_TABLE).select('*');
-            if (error) {
-                showLoading(false);
-                return alert("Error fetching stock: " + error.message);
-            }
+            if (error) { showLoading(false); return alert("Error fetching stock: " + error.message); }
 
             const stockData = {};
             stockRows.forEach(row => {
@@ -669,10 +702,7 @@
                 if (!stockData[brId]) {
                     stockData[brId] = {
                         name: row.branch_name,
-                        INK: 0,
-                        PAPER: 0,
-                        INK_CODE: "",
-                        PAPER_CODE: ""
+                        INK: 0, PAPER: 0, INK_CODE: "", PAPER_CODE: ""
                     };
                 }
 
@@ -681,7 +711,7 @@
                 if (type === "PAPER" && !stockData[brId].PAPER_CODE) stockData[brId].PAPER_CODE = row.product_name;
             });
 
-            renderPlanningTable(runRates, stockData, daysWD, daysWE);
+            renderPlanningTable(runRates, stockData, countWD, countWE);
             showLoading(false);
         }
 
@@ -714,10 +744,7 @@
                     const stock = stockData[id] || { INK: 0, PAPER: 0, INK_CODE: "", PAPER_CODE: "" };
                     const sales = runRates[id] || { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
 
-                    // Fetch Zone from Cost Cache using original name key
-                    // This is tricky if names mismatch, but we iterate using IDs. 
-                    // We need to match ID back to cost cache key. 
-                    // Simple approach: Iterate costs cache, find key with matching ID.
+                    // Fetch Zone Logic
                     let zone = "";
                     for(let key in BRANCH_COSTS_CACHE) {
                         if(parseInt(key.match(/^\d+/)?.[0]) == id) {
@@ -737,6 +764,7 @@
                         return { type, code, stock: currentStock, avgWD, avgWE, daysLeft, zone };
                     };
 
+                    // INK Logic Fix from V20
                     const paperCalc = calc('PAPER');
                     const inkCalc = calc('INK');
                     inkCalc.avgWD = paperCalc.avgWD;
@@ -830,44 +858,7 @@
             });
         };
 
-        window.toggleSelectAll = (source) => {
-            const checkboxes = source.closest('table').querySelectorAll('.row-select');
-            checkboxes.forEach(cb => cb.checked = source.checked);
-        }
-
-        window.downloadSelectedPlanning = () => {
-            const selected = [];
-            document.querySelectorAll('.row-select:checked').forEach(cb => {
-                const [idStr, type] = cb.dataset.id.split('-');
-                const id = parseInt(idStr);
-                // Find matching data in CURRENT_PLAN_DATA
-                const item = CURRENT_PLAN_DATA.find(d => d.id === id && d.type === type);
-                if(item) selected.push(item);
-            });
-
-            if(selected.length === 0) return alert("Please select items to export.");
-
-            const csvData = selected.map(i => ({
-                Branch: i.branch,
-                Zone: i.zone,
-                Type: i.type,
-                Code: i.code || "",
-                Stock: i.stock,
-                Avg_Weekday: i.avgWD.toFixed(2),
-                Avg_Weekend: i.avgWE.toFixed(2),
-                Days_Left: i.daysLeft.toFixed(1)
-            }));
-
-            const csv = Papa.unparse(csvData);
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `Service_Plan_Selected.csv`;
-            link.click();
-        }
-
-        // ... Existing modal and other functions ...
-        window.openGroupModal = (grp) => { /* Same as before */ };
+        window.openGroupModal = (grp) => { /* Same as V16 */ };
         window.toggleRankingModal = () => { const m=document.getElementById('rankingModal'); m.classList.toggle('opacity-0'); m.classList.toggle('pointer-events-none'); document.body.classList.toggle('modal-active'); };
         window.closeModal = () => toggleRankingModal();
         window.switchTab = (t) => { 
