@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SalesPulse V.40 (Fix Compare Year & Ink Logic)</title>
+    <title>SalesPulse V.41 (Fixed Year Graph & Service Plan)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -557,7 +557,7 @@
             
             if (!yA || !yB) return alert("Please select both years.");
 
-            showLoading(true, "Comparing Years..."); // Show loading manually
+            showLoading(true, "Comparing Years..."); 
 
             try {
                 const sA = `${yA}-01-01`;
@@ -583,10 +583,14 @@
                 const mapMonthly = (data) => {
                     const map = {};
                     data.forEach(r => {
-                        const key = r.transaction_date.slice(0,7); // YYYY-MM
-                        if (!map[key]) map[key] = {s:0, q:0};
-                        map[key].s += Number(r.total_amount);
-                        map[key].q += Number(r.quantity);
+                        // FIX: Slice YYYY-MM safely
+                        const d = r.transaction_date || "";
+                        if(d.length >= 7) {
+                            const key = d.slice(0, 7); // YYYY-MM
+                            if (!map[key]) map[key] = {s:0, q:0};
+                            map[key].s += Number(r.total_amount);
+                            map[key].q += Number(r.quantity);
+                        }
                     });
                     return map;
                 };
@@ -615,6 +619,9 @@
                     plugins: { legend: { position: 'top' }, datalabels: { display: true, align: 'end', anchor: 'end', color: (ctx) => ctx.datasetIndex === 0 ? '#3b82f6' : '#f97316', font: { size: 10, weight: 'bold' }, formatter: (val) => { if (val === 0) return ''; if (type === 'sales') return new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits:0}).format(val); return new Intl.NumberFormat('en-US').format(val) + ' Sheets'; } } }, scales: { y: { beginAtZero: true } }
                 });
 
+                // Wait slightly to ensure canvas is ready
+                await new Promise(r => setTimeout(r, 100));
+
                 charts.compYearSales = new Chart(document.getElementById('compareYearSalesChart').getContext('2d'), { type: 'line', data: { labels: monthLabels, datasets: [ { label: `Year ${yA}`, data: dataSA, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3 }, { label: `Year ${yB}`, data: dataSB, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 } ] }, options: lineOpts('sales') });
                 charts.compYearQty = new Chart(document.getElementById('compareYearQtyChart').getContext('2d'), { type: 'line', data: { labels: monthLabels, datasets: [ { label: `Year ${yA}`, data: dataQA, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3 }, { label: `Year ${yB}`, data: dataQB, borderColor: '#fdba74', backgroundColor: '#fdba74', tension: 0.3 } ] }, options: lineOpts('qty') });
 
@@ -622,7 +629,7 @@
                 console.error(err);
                 alert("Error comparing years: " + err.message);
             } finally {
-                showLoading(false); // Ensure loading is closed
+                showLoading(false);
             }
         };
 
@@ -695,8 +702,11 @@
             const start = new Date(document.getElementById('dashStart').value);
             const end = new Date(document.getElementById('dashEnd').value);
             let countWD = 0, countWE = 0;
+            
+            // FIX: Robust Date Counting using UTC
             for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                const day = d.getDay();
+                // getUTCDay() ensures consistency regardless of timezone
+                const day = d.getUTCDay(); // 0=Sun, 6=Sat
                 if (day === 0 || day === 6) countWE++; else countWD++;
             }
             if(countWD === 0) countWD = 1;
@@ -714,7 +724,10 @@
 
                 const isInk = (r.product || "").toUpperCase().includes("RIBBON");
                 const type = isInk ? "INK" : "PAPER";
-                const day = new Date(r.timestamp).getDay();
+                
+                // FIX: Use transaction_date string to determine day reliably
+                // r.transaction_date is YYYY-MM-DD
+                const day = new Date(r.transaction_date).getUTCDay(); 
                 const isWE = (day === 0 || day === 6);
                 
                 if (!runRates[brId]) runRates[brId] = { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
@@ -795,17 +808,18 @@
                         return { type, code, stock: currentStock, avgWD, avgWE, daysLeft };
                     };
 
-                    // FIXED: Ink Logic Update
+                    // FIXED: Ink Logic Update - Ink inherits Paper stats
                     const paperCalc = calc('PAPER');
                     const inkCalc = calc('INK');
 
-                    // Override Ink Sales with Paper Sales (Since they are consumed together)
+                    // Override Ink Sales Stats with Paper Stats
                     inkCalc.avgWD = paperCalc.avgWD;
                     inkCalc.avgWE = paperCalc.avgWE;
                     
                     // Recalculate Ink Days Left based on Paper Run Rate
-                    const weightAvgInk = ((inkCalc.avgWD * 5) + (inkCalc.avgWE * 2)) / 7;
-                    inkCalc.daysLeft = weightAvgInk > 0 ? (inkCalc.stock / weightAvgInk) : 999;
+                    // Use the same formula but with Ink Stock and Paper Sales Avg
+                    const paperWeightedAvg = ((paperCalc.avgWD * 5) + (paperCalc.avgWE * 2)) / 7;
+                    inkCalc.daysLeft = paperWeightedAvg > 0 ? (inkCalc.stock / paperWeightedAvg) : 999;
 
                     tableData.push({ branch: item.name, ...paperCalc });
                     tableData.push({ branch: item.name, ...inkCalc });
