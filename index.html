@@ -917,11 +917,13 @@
 
 function renderPlanningTable(runRates, stockData, daysWD, daysWE) {
     const container = document.getElementById('planningContainer');
-    ...
-
     container.innerHTML = '';
 
-    const allIds = new Set([...Object.keys(runRates), ...Object.keys(stockData)]);
+    // รวมทุก branch id ที่มีทั้งจาก runRates และ stockData
+    const allIds = new Set([
+        ...Object.keys(runRates),
+        ...Object.keys(stockData)
+    ]);
     const num = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 
     // --- Group by Store Type ---
@@ -935,7 +937,7 @@ function renderPlanningTable(runRates, stockData, daysWD, daysWE) {
 
     ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
         const items = groupedData[grp];
-        if (items.length === 0) return;
+        if (!items || items.length === 0) return;
 
         const color = grp === 'Moshi' ? 'pink' : (grp === 'B2S' ? 'blue' : 'orange');
         const tableData = [];
@@ -953,7 +955,7 @@ function renderPlanningTable(runRates, stockData, daysWD, daysWE) {
                 const weightedAvg = ((avgWD * 5) + (avgWE * 2)) / 7;
                 const currentStock = stock[type];
 
-                // --- ใช้รหัสสินค้า ---
+                // ใช้รหัสสินค้า ถ้ามี
                 const codeKey = type === 'INK' ? 'INK_CODE' : 'PAPER_CODE';
                 const code = stock[codeKey] || type;
 
@@ -966,6 +968,7 @@ function renderPlanningTable(runRates, stockData, daysWD, daysWE) {
             tableData.push({ branch: item.name, ...calc('INK') });
         });
 
+        // เรียงจากสาขาที่เหลือวันน้อยสุด
         tableData.sort((a, b) => a.daysLeft - b.daysLeft);
 
         let rows = '';
@@ -974,22 +977,24 @@ function renderPlanningTable(runRates, stockData, daysWD, daysWE) {
             const isWarn = rowItem.daysLeft >= 7 && rowItem.daysLeft < 14;
             const styleClass =
                 isCrit ? 'stock-critical' :
-                (isWarn ? 'stock-warning' : 'stock-good');
+                isWarn ? 'stock-warning' :
+                'stock-good';
 
             const dayText =
-                rowItem.daysLeft > 365 ? '> 1 Year' :
-                rowItem.daysLeft.toFixed(1) + ' Days';
+                rowItem.daysLeft > 365
+                    ? '> 1 Year'
+                    : rowItem.daysLeft.toFixed(1) + ' Days';
 
             rows += `
                 <tr class="border-b hover:bg-slate-50 text-xs planning-row">
                     <td class="px-4 py-2 font-medium text-slate-700">${rowItem.branch}</td>
-                    <td class="px-4 py-2 text-slate-500">${rowItem.code}</td>
+                    <td class="px-4 py-2 text-slate-500">
+                        ${rowItem.code || rowItem.type}
+                    </td>
                     <td class="px-4 py-2 text-right font-mono text-slate-800">${num.format(rowItem.stock)}</td>
                     <td class="px-4 py-2 text-right font-mono text-blue-600">${num.format(rowItem.avgWD)}</td>
                     <td class="px-4 py-2 text-right font-mono text-orange-600">${num.format(rowItem.avgWE)}</td>
-                    <td class="px-4 py-2 text-center font-mono text-xs rounded border ${styleClass}">
-                        ${dayText}
-                    </td>
+                    <td class="px-4 py-2 text-center font-mono text-xs rounded border ${styleClass}">${dayText}</td>
                 </tr>
             `;
         });
