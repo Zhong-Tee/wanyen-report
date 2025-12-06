@@ -42,7 +42,17 @@
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors active">Dashboard</button>
             <button onclick="switchTab('branch')" id="nav-branch" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Branch Analysis</button>
             <button onclick="switchTab('cost')" id="nav-cost" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Branch Cost</button>
-            <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Sales Compare</button>
+
+            <!-- เปลี่ยนชื่อเมนูเดิม -->
+            <button onclick="switchTab('compare')" id="nav-compare" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                Sales Comparison Period
+            </button>
+
+            <!-- เมนูใหม่ Year -->
+            <button onclick="switchTab('compareYear')" id="nav-compareYear" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                Sales Comparison Year
+            </button>
+
             <button onclick="switchTab('pnl')" id="nav-pnl" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">Profit & Loss</button>
             <button onclick="switchTab('planning')" id="nav-planning" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
@@ -133,13 +143,68 @@
 
         <!-- 4. COMPARE -->
         <div id="view-compare" class="hidden fade-in space-y-8">
-            <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">Sales Comparison</h2>
+            <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">
+                Sales Comparison Period
+            </h2>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-200"><div class="flex justify-between items-center mb-4"><h4 class="font-bold text-blue-800">Period A</h4><input type="month" class="text-xs border p-1 rounded" onchange="setCompMonth('A', this.value)" placeholder="Select Month"></div><div class="flex gap-2 mb-6"><input type="date" id="compStartA" class="border p-2 w-full text-sm rounded"><input type="date" id="compEndA" class="border p-2 w-full text-sm rounded"></div><p class="text-3xl font-black text-slate-800" id="compValA">0.00</p><p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyA" class="font-bold">0</span></p></div>
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200"><div class="flex justify-between items-center mb-4"><h4 class="font-bold text-orange-800">Period B</h4><input type="month" class="text-xs border p-1 rounded" onchange="setCompMonth('B', this.value)" placeholder="Select Month"></div><div class="flex gap-2 mb-6"><input type="date" id="compStartB" class="border p-2 w-full text-sm rounded"><input type="date" id="compEndB" class="border p-2 w-full text-sm rounded"></div><p class="text-3xl font-black text-slate-800" id="compValB">0.00</p><p class="text-sm text-slate-500 mt-2">Qty: <span id="compQtyB" class="font-bold">0</span></p></div>
             </div>
             <div class="flex justify-center pt-4"><button onclick="runCompare()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 font-bold">Run Comparison</button></div>
             <div class="space-y-6 mt-6"><div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><h4 class="font-bold text-slate-700 mb-4">Daily Sales Comparison (Line)</h4><div class="h-96"><canvas id="compareSalesChart"></canvas></div></div><div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200"><h4 class="font-bold text-slate-700 mb-4">Daily Quantity Comparison (Line)</h4><div class="h-96"><canvas id="compareQtyChart"></canvas></div></div></div>
+        </div>
+                      
+        <!-- 4.1 COMPARE YEAR -->
+        <div id="view-compareYear" class="hidden fade-in space-y-8">
+            <h2 class="text-3xl font-bold text-slate-900 border-b border-slate-100 pb-6">
+                Sales Comparison Year
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-blue-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-blue-800">Year A</h4>
+                        <input type="number" id="compYearA" class="text-xs border p-1 rounded w-24" placeholder="YYYY">
+                    </div>
+                    <p class="text-3xl font-black text-slate-800" id="compYearValA">0.00</p>
+                    <p class="text-sm text-slate-500 mt-2">
+                        Qty: <span id="compYearQtyA" class="font-bold">0</span>
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-orange-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="font-bold text-orange-800">Year B</h4>
+                        <input type="number" id="compYearB" class="text-xs border p-1 rounded w-24" placeholder="YYYY">
+                    </div>
+                    <p class="text-3xl font-black text-slate-800" id="compYearValB">0.00</p>
+                    <p class="text-sm text-slate-500 mt-2">
+                        Qty: <span id="compYearQtyB" class="font-bold">0</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex justify-center pt-4">
+                <button onclick="runCompareYear()" class="bg-slate-800 text-white px-8 py-3 rounded-full shadow-lg hover:bg-slate-900 font-bold">
+                    Run Year Comparison
+                </button>
+            </div>
+
+            <div class="space-y-6 mt-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h4 class="font-bold text-slate-700 mb-4">Monthly Sales Comparison (Line)</h4>
+                    <div class="h-96">
+                        <canvas id="compareYearSalesChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h4 class="font-bold text-slate-700 mb-4">Monthly Quantity Comparison (Line)</h4>
+                    <div class="h-96">
+                        <canvas id="compareYearQtyChart"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 5. P&L -->
@@ -448,14 +513,19 @@
         };
 
         window.runCompare = async () => {
-            const sA = document.getElementById('compStartA').value; const eA = document.getElementById('compEndA').value;
-            const sB = document.getElementById('compStartB').value; const eB = document.getElementById('compEndB').value;
+            const sA = document.getElementById('compStartA').value; 
+            const eA = document.getElementById('compEndA').value;
+            const sB = document.getElementById('compStartB').value; 
+            const eB = document.getElementById('compEndB').value;
             if(!sA || !eA || !sB || !eB) return alert("Select dates");
 
             const dA = await fetchData(sA, eA);
             const dB = await fetchData(sB, eB);
 
-            const calcTotal = d => d.reduce((a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}), {s:0,q:0});
+            const calcTotal = d => d.reduce(
+                (a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}),
+                {s:0,q:0}
+            );
             const rA = calcTotal(dA); 
             const rB = calcTotal(dB);
 
@@ -467,14 +537,14 @@
             document.getElementById('compValB').innerText = cur.format(rB.s); 
             document.getElementById('compQtyB').innerText = num.format(rB.q);
             
-            // --- DAILY DATA LOGIC FOR LINE CHART ---
+            // --- DAILY DATA LOGIC FOR LINE CHART (ตามจำนวนวันจริง) ---
             const mapDaily = (data) => {
                 const map = {};
                 data.forEach(r => {
-                    const day = parseInt(r.transaction_date.split('-')[2]);
-                    if (!map[day]) map[day] = {s:0, q:0};
-                    map[day].s += Number(r.total_amount);
-                    map[day].q += Number(r.quantity);
+                    const key = r.transaction_date; // YYYY-MM-DD
+                    if (!map[key]) map[key] = {s:0, q:0};
+                    map[key].s += Number(r.total_amount);
+                    map[key].q += Number(r.quantity);
                 });
                 return map;
             };
@@ -482,12 +552,37 @@
             const mapA = mapDaily(dA);
             const mapB = mapDaily(dB);
 
-            const allDays = new Set([...Object.keys(mapA), ...Object.keys(mapB)]);
-            const labels = Array.from(allDays).sort((a,b)=>a-b).map(d => `Day ${d}`);
-            const dataSA = labels.map((_, i) => mapA[i+1]?.s || 0);
-            const dataSB = labels.map((_, i) => mapB[i+1]?.s || 0);
-            const dataQA = labels.map((_, i) => mapA[i+1]?.q || 0);
-            const dataQB = labels.map((_, i) => mapB[i+1]?.q || 0);
+            const createDateArray = (startStr, endStr) => {
+                const arr = [];
+                const start = new Date(startStr);
+                const end = new Date(endStr);
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    arr.push(d.toISOString().split('T')[0]); // YYYY-MM-DD
+                }
+                return arr;
+            };
+
+            const datesA = createDateArray(sA, eA);
+            const datesB = createDateArray(sB, eB);
+            const maxLen = Math.max(datesA.length, datesB.length);
+
+            const labels = Array.from({length: maxLen}, (_, i) => `Day ${i+1}`);
+            const dataSA = Array.from({length: maxLen}, (_, i) => {
+                const d = datesA[i];
+                return d ? (mapA[d]?.s || 0) : 0;
+            });
+            const dataSB = Array.from({length: maxLen}, (_, i) => {
+                const d = datesB[i];
+                return d ? (mapB[d]?.s || 0) : 0;
+            });
+            const dataQA = Array.from({length: maxLen}, (_, i) => {
+                const d = datesA[i];
+                return d ? (mapA[d]?.q || 0) : 0;
+            });
+            const dataQB = Array.from({length: maxLen}, (_, i) => {
+                const d = datesB[i];
+                return d ? (mapB[d]?.q || 0) : 0;
+            });
 
             if(charts.compSales) charts.compSales.destroy();
             if(charts.compQty) charts.compQty.destroy();
@@ -506,7 +601,12 @@
                         font: { size: 10, weight: 'bold' },
                         formatter: (val) => {
                             if (val === 0) return '';
-                            if (type === 'sales') return new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits:0}).format(val);
+                            if (type === 'sales')
+                                return new Intl.NumberFormat('en-US', {
+                                    style:'currency',
+                                    currency:'THB',
+                                    maximumFractionDigits:0
+                                }).format(val);
                             return new Intl.NumberFormat('en-US').format(val) + ' Sheets';
                         }
                     } 
@@ -516,30 +616,157 @@
                 }
             });
             
-            charts.compSales = new Chart(document.getElementById('compareSalesChart').getContext('2d'), {
-                type: 'line', 
-                data: { 
-                    labels: labels, 
-                    datasets: [
-                        { label: 'Period A', data: dataSA, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3 },
-                        { label: 'Period B', data: dataSB, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 }
-                    ] 
-                }, 
-                options: lineOpts('sales')
+            charts.compSales = new Chart(
+                document.getElementById('compareSalesChart').getContext('2d'),
+                {
+                    type: 'line', 
+                    data: { 
+                        labels: labels, 
+                        datasets: [
+                            { label: 'Period A', data: dataSA, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3 },
+                            { label: 'Period B', data: dataSB, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 }
+                        ] 
+                    }, 
+                    options: lineOpts('sales')
+                }
+            );
+
+            charts.compQty = new Chart(
+                document.getElementById('compareQtyChart').getContext('2d'),
+                {
+                    type: 'line', 
+                    data: { 
+                        labels: labels, 
+                        datasets: [
+                            { label: 'Period A', data: dataQA, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3 },
+                            { label: 'Period B', data: dataQB, borderColor: '#fdba74', backgroundColor: '#fdba74', tension: 0.3 }
+                        ] 
+                    }, 
+                    options: lineOpts('qty')
+                }
+            );
+        };
+
+        window.runCompareYear = async () => {
+            const yA = document.getElementById('compYearA').value;
+            const yB = document.getElementById('compYearB').value;
+            if (!yA || !yB) return alert("Please input both years (YYYY).");
+
+            const sA = `${yA}-01-01`;
+            const eA = `${yA}-12-31`;
+            const sB = `${yB}-01-01`;
+            const eB = `${yB}-12-31`;
+
+            const dA = await fetchData(sA, eA);
+            const dB = await fetchData(sB, eB);
+
+            const calcTotal = d => d.reduce(
+                (a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}),
+                {s:0,q:0}
+            );
+            const rA = calcTotal(dA);
+            const rB = calcTotal(dB);
+
+            const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB'});
+            const num = new Intl.NumberFormat('en-US');
+
+            document.getElementById('compYearValA').innerText = cur.format(rA.s);
+            document.getElementById('compYearQtyA').innerText = num.format(rA.q);
+            document.getElementById('compYearValB').innerText = cur.format(rB.s);
+            document.getElementById('compYearQtyB').innerText = num.format(rB.q);
+
+            const mapMonthly = (data) => {
+                const map = {};
+                data.forEach(r => {
+                    const key = r.transaction_date.slice(0,7); // YYYY-MM
+                    if (!map[key]) map[key] = {s:0, q:0};
+                    map[key].s += Number(r.total_amount);
+                    map[key].q += Number(r.quantity);
+                });
+                return map;
+            };
+
+            const mapA = mapMonthly(dA);
+            const mapB = mapMonthly(dB);
+
+            const monthLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+            const dataSA = [];
+            const dataSB = [];
+            const dataQA = [];
+            const dataQB = [];
+
+            for (let m = 1; m <= 12; m++) {
+                const mm = String(m).padStart(2, '0');
+                const keyA = `${yA}-${mm}`;
+                const keyB = `${yB}-${mm}`;
+                dataSA.push(mapA[keyA]?.s || 0);
+                dataSB.push(mapB[keyB]?.s || 0);
+                dataQA.push(mapA[keyA]?.q || 0);
+                dataQB.push(mapB[keyB]?.q || 0);
+            }
+
+            if (charts.compYearSales) charts.compYearSales.destroy();
+            if (charts.compYearQty) charts.compYearQty.destroy();
+
+            const lineOpts = (type) => ({ 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                interaction: { mode: 'index', intersect: false },
+                plugins: { 
+                    legend: { position: 'top' }, 
+                    datalabels: { 
+                        display: true,
+                        align: 'end',
+                        anchor: 'end',
+                        color: (ctx) => ctx.datasetIndex === 0 ? '#3b82f6' : '#f97316',
+                        font: { size: 10, weight: 'bold' },
+                        formatter: (val) => {
+                            if (val === 0) return '';
+                            if (type === 'sales')
+                                return new Intl.NumberFormat('en-US', {
+                                    style:'currency',
+                                    currency:'THB',
+                                    maximumFractionDigits:0
+                                }).format(val);
+                            return new Intl.NumberFormat('en-US').format(val) + ' Sheets';
+                        }
+                    } 
+                },
+                scales: { y: { beginAtZero: true } }
             });
 
-            charts.compQty = new Chart(document.getElementById('compareQtyChart').getContext('2d'), {
-                type: 'line', 
-                data: { 
-                    labels: labels, 
-                    datasets: [
-                        { label: 'Period A', data: dataQA, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3 },
-                        { label: 'Period B', data: dataQB, borderColor: '#fdba74', backgroundColor: '#fdba74', tension: 0.3 }
-                    ] 
-                }, 
-                options: lineOpts('qty')
-            });
+            charts.compYearSales = new Chart(
+                document.getElementById('compareYearSalesChart').getContext('2d'),
+                {
+                    type: 'line',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [
+                            { label: `Year ${yA}`, data: dataSA, borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.3 },
+                            { label: `Year ${yB}`, data: dataSB, borderColor: '#f97316', backgroundColor: '#f97316', tension: 0.3 }
+                        ]
+                    },
+                    options: lineOpts('sales')
+                }
+            );
+
+            charts.compYearQty = new Chart(
+                document.getElementById('compareYearQtyChart').getContext('2d'),
+                {
+                    type: 'line',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [
+                            { label: `Year ${yA}`, data: dataQA, borderColor: '#60a5fa', backgroundColor: '#60a5fa', tension: 0.3 },
+                            { label: `Year ${yB}`, data: dataQB, borderColor: '#fdba74', backgroundColor: '#fdba74', tension: 0.3 }
+                        ]
+                    },
+                    options: lineOpts('qty')
+                }
+            );
         };
+
 
         // --- P&L (UPDATED RENT FORMULA) ---
         async function loadPnLMonth() {
@@ -651,111 +878,148 @@
                 return alert("Error fetching stock: " + error.message);
             }
 
-            const stockData = {}; // BranchID -> {Name, INK: qty, PAPER: qty}
+            const stockData = {}; // BranchID -> {name, INK, PAPER, INK_CODE, PAPER_CODE}
             stockRows.forEach(row => {
-                const brId = row.branch_id; // Using actual DB column
+                const brId = row.branch_id; 
                 if (!brId) return;
 
-                const prod = (row.product_name || "").toUpperCase();
+                const prodRaw = row.product_name || "";
+                const prod = prodRaw.toUpperCase();
                 const qty = Number(row.quantity || 0);
                 const isInk = prod.includes("RIBBON") || prod.includes("INK");
                 const type = isInk ? "INK" : "PAPER";
 
-                if (!stockData[brId]) stockData[brId] = { name: row.branch_name, INK: 0, PAPER: 0 };
+                if (!stockData[brId]) {
+                    stockData[brId] = {
+                        name: row.branch_name,
+                        INK: 0,
+                        PAPER: 0,
+                        INK_CODE: "",
+                        PAPER_CODE: ""
+                    };
+                }
+
                 stockData[brId][type] += qty;
+
+                // เก็บรหัสสินค้า (product_name)
+                if (type === "INK" && !stockData[brId].INK_CODE) {
+                    stockData[brId].INK_CODE = prodRaw;
+                }
+                if (type === "PAPER" && !stockData[brId].PAPER_CODE) {
+                    stockData[brId].PAPER_CODE = prodRaw;
+                }
             });
 
+            // 📌 ต้องมี 2 บรรทัดนี้ + ปิดฟังก์ชัน
             renderPlanningTable(runRates, stockData, countWD, countWE);
             showLoading(false);
         }
 
-        function renderPlanningTable(runRates, stockData, daysWD, daysWE) {
-            const container = document.getElementById('planningContainer');
-            container.innerHTML = '';
+function renderPlanningTable(runRates, stockData, daysWD, daysWE) {
+    const container = document.getElementById('planningContainer');
+    ...
 
-            const allIds = new Set([...Object.keys(runRates), ...Object.keys(stockData)]);
-            const num = new Intl.NumberFormat('en-US', {maximumFractionDigits: 1});
+    container.innerHTML = '';
 
-            const groupedData = {'Moshi': [], 'B2S': [], 'Wanyen': []};
+    const allIds = new Set([...Object.keys(runRates), ...Object.keys(stockData)]);
+    const num = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 
-            allIds.forEach(id => {
-                const name = stockData[id]?.name || `Branch ${id}`;
-                const group = getGroup(name);
-                if (groupedData[group]) groupedData[group].push({ id, name });
-            });
+    // --- Group by Store Type ---
+    const groupedData = { 'Moshi': [], 'B2S': [], 'Wanyen': [] };
 
-            ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
-                const items = groupedData[grp];
-                if (items.length === 0) return;
+    allIds.forEach(id => {
+        const name = stockData[id]?.name || `Branch ${id}`;
+        const group = getGroup(name);  // กลุ่มตามชื่อสาขา
+        if (groupedData[group]) groupedData[group].push({ id, name });
+    });
 
-                const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                const tableData = [];
+    ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
+        const items = groupedData[grp];
+        if (items.length === 0) return;
 
-                items.forEach(item => {
-                    const id = item.id;
-                    const stock = stockData[id] || { INK: 0, PAPER: 0 };
-                    const sales = runRates[id] || { INK: {wd:0, we:0}, PAPER: {wd:0, we:0} };
+        const color = grp === 'Moshi' ? 'pink' : (grp === 'B2S' ? 'blue' : 'orange');
+        const tableData = [];
 
-                    const calc = (type) => {
-                        const s = sales[type];
-                        const avgWD = s.wd / daysWD;
-                        const avgWE = s.we / daysWE;
-                        const weightedAvg = ((avgWD * 5) + (avgWE * 2)) / 7;
-                        const currentStock = stock[type];
-                        const daysLeft = weightedAvg > 0 ? (currentStock / weightedAvg) : 999;
-                        return { type, stock: currentStock, avgWD, avgWE, daysLeft };
-                    };
+        items.forEach(item => {
+            const id = item.id;
+            const stock = stockData[id] || { INK: 0, PAPER: 0, INK_CODE: "", PAPER_CODE: "" };
+            const sales = runRates[id] || { INK: { wd: 0, we: 0 }, PAPER: { wd: 0, we: 0 } };
 
-                    tableData.push({ branch: item.name, ...calc('PAPER') });
-                    tableData.push({ branch: item.name, ...calc('INK') });
-                });
+            const calc = (type) => {
+                const s = sales[type];
+                const avgWD = s.wd / daysWD;
+                const avgWE = s.we / daysWE;
 
-                tableData.sort((a,b) => a.daysLeft - b.daysLeft);
+                const weightedAvg = ((avgWD * 5) + (avgWE * 2)) / 7;
+                const currentStock = stock[type];
 
-                let rows = '';
-                tableData.forEach(rowItem => {
-                    const isCrit = rowItem.daysLeft < 7;
-                    const isWarn = rowItem.daysLeft >= 7 && rowItem.daysLeft < 14;
-                    const styleClass = isCrit ? 'stock-critical' : (isWarn ? 'stock-warning' : 'stock-good');
-                    const dayText = rowItem.daysLeft > 365 ? '> 1 Year' : rowItem.daysLeft.toFixed(1) + ' Days';
+                // --- ใช้รหัสสินค้า ---
+                const codeKey = type === 'INK' ? 'INK_CODE' : 'PAPER_CODE';
+                const code = stock[codeKey] || type;
 
-                    rows += `
-                        <tr class="border-b hover:bg-slate-50 text-xs planning-row">
-                            <td class="px-4 py-2 font-medium text-slate-700">${rowItem.branch}</td>
-                            <td class="px-4 py-2 text-slate-500">${rowItem.type}</td>
-                            <td class="px-4 py-2 text-right font-mono text-slate-800">${num.format(rowItem.stock)}</td>
-                            <td class="px-4 py-2 text-right font-mono text-blue-600">${num.format(rowItem.avgWD)}</td>
-                            <td class="px-4 py-2 text-right font-mono text-orange-600">${num.format(rowItem.avgWE)}</td>
-                            <td class="px-4 py-2 text-center font-mono text-xs rounded border ${styleClass}">${dayText}</td>
-                        </tr>
-                    `;
-                });
+                const daysLeft = weightedAvg > 0 ? (currentStock / weightedAvg) : 999;
 
-                container.innerHTML += `
-                    <div class="bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm planning-card">
-                        <div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm border-b border-${color}-100 flex justify-between">
-                            <span>${grp}</span>
-                            <span class="text-[10px] bg-white px-2 rounded border border-${color}-200 opacity-70">Sorted by Days Left</span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full">
-                                <thead class="bg-white text-[10px] uppercase text-slate-400 border-b">
-                                    <tr>
-                                        <th class="text-left px-4 py-2">Branch</th>
-                                        <th class="text-left px-4 py-2">Type</th>
-                                        <th class="text-right px-4">Stock</th>
-                                        <th class="text-right px-4">Avg (M-F)</th>
-                                        <th class="text-right px-4">Avg (S-S)</th>
-                                        <th class="text-center px-4">Est. Time Left</th>
-                                    </tr>
-                                </thead>
-                                <tbody>${rows}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-            });
-        }
+                return { type, code, stock: currentStock, avgWD, avgWE, daysLeft };
+            };
+
+            tableData.push({ branch: item.name, ...calc('PAPER') });
+            tableData.push({ branch: item.name, ...calc('INK') });
+        });
+
+        tableData.sort((a, b) => a.daysLeft - b.daysLeft);
+
+        let rows = '';
+        tableData.forEach(rowItem => {
+            const isCrit = rowItem.daysLeft < 7;
+            const isWarn = rowItem.daysLeft >= 7 && rowItem.daysLeft < 14;
+            const styleClass =
+                isCrit ? 'stock-critical' :
+                (isWarn ? 'stock-warning' : 'stock-good');
+
+            const dayText =
+                rowItem.daysLeft > 365 ? '> 1 Year' :
+                rowItem.daysLeft.toFixed(1) + ' Days';
+
+            rows += `
+                <tr class="border-b hover:bg-slate-50 text-xs planning-row">
+                    <td class="px-4 py-2 font-medium text-slate-700">${rowItem.branch}</td>
+                    <td class="px-4 py-2 text-slate-500">${rowItem.code}</td>
+                    <td class="px-4 py-2 text-right font-mono text-slate-800">${num.format(rowItem.stock)}</td>
+                    <td class="px-4 py-2 text-right font-mono text-blue-600">${num.format(rowItem.avgWD)}</td>
+                    <td class="px-4 py-2 text-right font-mono text-orange-600">${num.format(rowItem.avgWE)}</td>
+                    <td class="px-4 py-2 text-center font-mono text-xs rounded border ${styleClass}">
+                        ${dayText}
+                    </td>
+                </tr>
+            `;
+        });
+
+        container.innerHTML += `
+            <div class="bg-white rounded-xl border border-${color}-200 overflow-hidden shadow-sm planning-card">
+                <div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm border-b border-${color}-100 flex justify-between">
+                    <span>${grp}</span>
+                    <span class="text-[10px] bg-white px-2 rounded border border-${color}-200 opacity-70">Sorted by Days Left</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-white text-[10px] uppercase text-slate-400 border-b">
+                            <tr>
+                                <th class="text-left px-4 py-2">Branch</th>
+                                <th class="text-left px-4 py-2">Type</th>
+                                <th class="text-right px-4">Stock</th>
+                                <th class="text-right px-4">Avg (M-F)</th>
+                                <th class="text-right px-4">Avg (S-S)</th>
+                                <th class="text-center px-4">Est. Time Left</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    });
+}
+
 
         // NEW: Search Filter for Planning
         window.filterPlanningTable = () => {
@@ -793,7 +1057,7 @@
         window.toggleRankingModal = () => { const m=document.getElementById('rankingModal'); m.classList.toggle('opacity-0'); m.classList.toggle('pointer-events-none'); document.body.classList.toggle('modal-active'); };
         window.closeModal = () => toggleRankingModal();
         window.switchTab = (t) => { 
-            ['dashboard', 'compare', 'pnl', 'branch', 'cost', 'planning'].forEach(x => {
+            ['dashboard', 'compare', 'compareYear', 'pnl', 'branch', 'cost', 'planning'].forEach(x => {
                 document.getElementById(`view-${x}`).classList.add('hidden');
                 document.getElementById(`nav-${x}`).classList.remove('active');
             }); 
