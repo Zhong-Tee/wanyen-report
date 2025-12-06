@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SalesReport V.42</title>
     
+    <!-- CHANGE 3: Favicon Pink W (Japanese Cute Style) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2250%22 fill=%22%23ffb7c5%22/><text x=%2250%22 y=%2250%22 font-family=%22Arial, sans-serif%22 font-weight=%22bold%22 font-size=%2260%22 fill=%22white%22 text-anchor=%22middle%22 dominant-baseline=%22central%22>W</text></svg>">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
@@ -155,12 +158,12 @@
         </div>
 
         <!-- 2. BRANCH ANALYSIS -->
-        <div id="view-branch" class="hidden fade-in space-y-6 h-full flex flex-col">
-             <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6 shrink-0">
+        <div id="view-branch" class="hidden fade-in space-y-8">
+             <div class="flex flex-col md:flex-row justify-between items-end gap-4 border-b border-slate-100 pb-6">
                 <div><h2 class="text-3xl font-bold text-slate-900 tracking-tight">Branch Group Analysis</h2><p class="text-sm text-slate-500 mt-1">Performance overview & detailed rankings.</p></div>
                 <div class="flex gap-2 items-center bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm"><input type="date" id="branchStart" class="text-sm border p-1.5 rounded"><span class="text-slate-400">-</span><input type="date" id="branchEnd" class="text-sm border p-1.5 rounded"><button onclick="fetchBranchData()" class="bg-indigo-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-indigo-700">Update</button></div>
             </div>
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 flex-1 min-h-0" id="branchCardsContainerFull"></div>
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6" id="branchCardsContainerFull"></div>
         </div>
 
         <!-- 3. BRANCH COST -->
@@ -356,10 +359,32 @@
             });
         }
 
+        // CHANGE 4: Data Normalization / Aggregation Helper
+        function normalizeBranchNames(data) {
+            // 1. Map ID to Latest Timestamp and Name
+            const idMap = {};
+            data.forEach(r => {
+                if(r.branch_id) {
+                    const time = new Date(r.timestamp).getTime();
+                    if(!idMap[r.branch_id] || time > idMap[r.branch_id].time) {
+                        idMap[r.branch_id] = { time: time, name: r.branch_name };
+                    }
+                }
+            });
+
+            // 2. Update all records to use the latest name for their ID
+            // This ensures subsequent grouping by name automatically aggregates duplicates
+            return data.map(r => {
+                if(r.branch_id && idMap[r.branch_id]) {
+                    r.branch_name = idMap[r.branch_id].name;
+                }
+                return r;
+            });
+        }
+
         async function fetchData(s, e) {
             showLoading(true, "Fetching...");
             let allRows = [], from = 0, pageSize = 1000, keepFetching = true;
-            
             const ESTIMATED_MAX = TOTAL_DB_ROWS > 0 ? TOTAL_DB_ROWS : 50000; 
 
             try {
@@ -374,7 +399,7 @@
                     }
                     
                     let progress = (from / TOTAL_DB_ROWS) * 100;
-                    if(progress > 95) progress = 95; // Wait for final
+                    if(progress > 95) progress = 95; 
                     updateProgress(progress);
 
                     if (data.length < pageSize) keepFetching = false;
@@ -392,7 +417,10 @@
             const s = document.getElementById('dashStart').value;
             const e = document.getElementById('dashEnd').value;
             if(!s || !e) return;
-            GLOBAL_DATA = await fetchData(s, e);
+            let data = await fetchData(s, e);
+            // APPLY NORMALIZATION
+            GLOBAL_DATA = normalizeBranchNames(data);
+            
             document.getElementById('recordCountDisplay').innerText = `${GLOBAL_DATA.length} rows`;
             document.getElementById('currentRangeText').innerText = `${s} to ${e}`;
             document.getElementById('branchStart').value = s;
@@ -405,7 +433,10 @@
             const s = document.getElementById('branchStart').value;
             const e = document.getElementById('branchEnd').value;
             if(!s || !e) return alert("Select dates");
-            GLOBAL_DATA = await fetchData(s, e);
+            let data = await fetchData(s, e);
+            // APPLY NORMALIZATION
+            GLOBAL_DATA = normalizeBranchNames(data);
+
             document.getElementById('dashStart').value = s;
             document.getElementById('dashEnd').value = e;
             document.getElementById('currentRangeText').innerText = `${s} to ${e}`;
@@ -427,8 +458,9 @@
             GLOBAL_DATA.forEach(r => {
                 const v = Number(r.total_amount)||0;
                 const q = Number(r.quantity)||0;
-                const g = getGroup(r.branch_name);
+                // Because of normalizeBranchNames, branch_name is already standardized here
                 const brName = r.branch_name || "Unknown";
+                const g = getGroup(brName);
 
                 sum+=v; qty+=q;
                 groups[g].sum+=v; groups[g].qty+=q;
@@ -440,7 +472,7 @@
                 const dayIdx = new Date(r.timestamp).getDay();
                 weeklyStats[dayIdx] += v;
                 globalProd[r.product||"?"] = (globalProd[r.product||"?"]||0)+v;
-                globalBranch[r.branch_name||"?"] = (globalBranch[r.branch_name||"?"]||0)+v;
+                globalBranch[brName] = (globalBranch[brName]||0)+v;
             });
 
             Object.entries(branchSales).forEach(([br, data]) => {
@@ -525,6 +557,7 @@
         // --- BRANCH VIEW ---
         function renderBranchView() {
             const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
+            // GLOBAL_DATA is already normalized in fetchBranchData
             const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e);
             const container = document.getElementById('branchCardsContainerFull'); container.innerHTML = '';
             const cur = new Intl.NumberFormat('en-US', {style:'currency', currency:'THB', maximumFractionDigits: 0});
@@ -541,25 +574,19 @@
                 });
 
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange');
-                // UPDATE: Increased to slice(0, 10) for Top 10
-                const topProd = Object.entries(prodStats).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v],i)=>`<tr class="border-b border-${color}-50 text-xs"><td class="py-1 text-slate-500 w-4">${i+1}</td><td class="py-1 truncate max-w-[80px]" title="${k}">${k}</td><td class="py-1 text-right">${cur.format(v)}</td></tr>`).join('');
-                const topBr = Object.entries(branchStats).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v],i)=>`<tr class="border-b border-${color}-50 text-xs"><td class="py-1 text-slate-500 w-4">${i+1}</td><td class="py-1 truncate max-w-[80px]" title="${k}">${k}</td><td class="py-1 text-right">${cur.format(v)}</td></tr>`).join('');
+                const topProd = Object.entries(prodStats).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v],i)=>`<tr class="border-b border-${color}-50 text-xs"><td class="py-1 text-slate-500 w-4">${i+1}</td><td class="py-1 truncate max-w-[80px]" title="${k}">${k}</td><td class="py-1 text-right">${cur.format(v)}</td></tr>`).join('');
+                const topBr = Object.entries(branchStats).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v],i)=>`<tr class="border-b border-${color}-50 text-xs"><td class="py-1 text-slate-500 w-4">${i+1}</td><td class="py-1 truncate max-w-[80px]" title="${k}">${k}</td><td class="py-1 text-right">${cur.format(v)}</td></tr>`).join('');
 
-                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full"><div class="bg-${color}-50 px-5 py-3 border-b border-${color}-100 flex justify-between items-center"><h3 class="font-bold text-${color}-700 text-lg">${grp}</h3><span class="text-xs bg-white px-2 py-1 rounded font-bold border border-${color}-200 text-${color}-600">${branches.size} Branch</span></div><div class="p-4 flex-1 space-y-4 overflow-y-auto"><div class="grid grid-cols-2 gap-2 text-center"><div><p class="text-[10px] text-slate-400 font-bold">SALES</p><p class="font-bold text-slate-800">${cur.format(sum)}</p></div><div><p class="text-[10px] text-slate-400 font-bold">QTY</p><p class="font-bold text-slate-800">${num.format(qty)}</p></div></div><div class="grid grid-cols-2 gap-2"><div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP PRODUCTS</p><table class="w-full">${topProd}</table></div><div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP BRANCHES</p><table class="w-full">${topBr}</table></div></div></div><div class="p-3 border-t border-slate-100 bg-slate-50/50"><button onclick="openGroupModal('${grp}')" class="w-full py-2 bg-white border border-${color}-200 text-${color}-700 text-xs font-bold rounded hover:bg-${color}-50">View All Data</button></div></div>`;
+                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col h-full"><div class="bg-${color}-50 px-5 py-3 border-b border-${color}-100 flex justify-between items-center"><h3 class="font-bold text-${color}-700 text-lg">${grp}</h3><span class="text-xs bg-white px-2 py-1 rounded font-bold border border-${color}-200 text-${color}-600">${branches.size} Branch</span></div><div class="p-4 flex-1 space-y-4"><div class="grid grid-cols-2 gap-2 text-center"><div><p class="text-[10px] text-slate-400 font-bold">SALES</p><p class="font-bold text-slate-800">${cur.format(sum)}</p></div><div><p class="text-[10px] text-slate-400 font-bold">QTY</p><p class="font-bold text-slate-800">${num.format(qty)}</p></div></div><div class="grid grid-cols-2 gap-2"><div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP PRODUCTS</p><table class="w-full">${topProd}</table></div><div class="overflow-hidden"><p class="text-[9px] font-bold text-slate-400 mb-1">TOP BRANCHES</p><table class="w-full">${topBr}</table></div></div></div><div class="p-3 border-t border-slate-100 bg-slate-50/50"><button onclick="openGroupModal('${grp}')" class="w-full py-2 bg-white border border-${color}-200 text-${color}-700 text-xs font-bold rounded hover:bg-${color}-50">View All Data</button></div></div>`;
             });
         }
 
         async function loadCostData() {
-            // UPDATED: Fetches 'branch_id' too
+            // UPDATED: Now fetches 'zone' as well
             const { data, error } = await supabase.from(COST_TABLE).select('*');
             if(!error) { 
                 BRANCH_COSTS_CACHE = {}; 
-                data.forEach(c => {
-                    // Cache by branch_name for display, but include ID
-                    BRANCH_COSTS_CACHE[c.branch_name] = {rent: c.rent, gp: c.gp_percent, zone: c.zone, branch_id: c.branch_id};
-                    // Also cache by ID if possible for precise matching
-                    if(c.branch_id) BRANCH_COSTS_CACHE[`ID_${c.branch_id}`] = {rent: c.rent, gp: c.gp_percent, zone: c.zone, branch_name: c.branch_name};
-                }); 
+                data.forEach(c => BRANCH_COSTS_CACHE[c.branch_name] = {rent: c.rent, gp: c.gp_percent, zone: c.zone}); 
             }
         }
 
@@ -572,32 +599,22 @@
             ['Moshi', 'B2S', 'Wanyen'].forEach(grp => {
                 const color = grp==='Moshi'?'pink':(grp==='B2S'?'blue':'orange'); let rows = '';
                 groups[grp].forEach(br => { 
-                    const s = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0, zone:'', branch_id: ''}; 
-                    // UPDATED: Added Branch ID Input
-                    rows += `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-4 text-xs font-medium truncate max-w-[120px]" title="${br}">${br}</td><td class="py-2 px-2 text-right"><input type="number" value="${s.rent}" class="border rounded w-16 text-right text-xs p-1" onchange="saveCostCloud('${br}', 'rent', this.value)"></td><td class="py-2 px-2 text-right"><input type="number" value="${s.gp}" class="border rounded w-12 text-right text-xs p-1" onchange="saveCostCloud('${br}', 'gp', this.value)"></td><td class="py-2 px-2"><input type="text" value="${s.zone||''}" placeholder="Zone" class="border rounded w-16 text-xs p-1" onchange="saveCostCloud('${br}', 'zone', this.value)"></td><td class="py-2 px-2"><input type="number" value="${s.branch_id||''}" placeholder="ID" class="border rounded w-12 text-xs p-1" onchange="saveCostCloud('${br}', 'branch_id', this.value)"></td><td class="py-2 px-2 text-center"><button onclick="deleteCostCloud('${br}')" class="text-red-400 hover:text-red-600">×</button></td></tr>`; 
+                    const s = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0, zone:''}; 
+                    // UPDATED: Added Zone Input
+                    rows += `<tr class="border-b hover:bg-slate-50"><td class="py-2 px-4 text-xs font-medium truncate max-w-[120px]" title="${br}">${br}</td><td class="py-2 px-2 text-right"><input type="number" value="${s.rent}" class="border rounded w-16 text-right text-xs p-1" onchange="saveCostCloud('${br}', 'rent', this.value)"></td><td class="py-2 px-2 text-right"><input type="number" value="${s.gp}" class="border rounded w-12 text-right text-xs p-1" onchange="saveCostCloud('${br}', 'gp', this.value)"></td><td class="py-2 px-2"><input type="text" value="${s.zone||''}" placeholder="Zone" class="border rounded w-20 text-xs p-1" onchange="saveCostCloud('${br}', 'zone', this.value)"></td><td class="py-2 px-2 text-center"><button onclick="deleteCostCloud('${br}')" class="text-red-400 hover:text-red-600">×</button></td></tr>`; 
                 });
-                // UPDATED: Added Branch ID Header
-                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 overflow-hidden"><div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm">${grp}</div><div class="h-[calc(100vh-240px)] overflow-y-auto"><table class="w-full"><thead class="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th class="text-left px-4 py-2">Branch</th><th class="px-2 text-right">Rent</th><th class="px-2 text-right">%GP</th><th class="px-2">Zone</th><th class="px-2">ID</th><th class="px-2"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+                // UPDATED: Added Zone Header
+                container.innerHTML += `<div class="bg-white rounded-xl border border-${color}-200 overflow-hidden"><div class="bg-${color}-50 px-4 py-2 font-bold text-${color}-800 text-sm">${grp}</div><div class="h-[calc(100vh-240px)] overflow-y-auto"><table class="w-full"><thead class="bg-slate-50 text-[10px] uppercase text-slate-500"><tr><th class="text-left px-4 py-2">Branch</th><th class="px-2 text-right">Rent</th><th class="px-2 text-right">%GP</th><th class="px-2">Zone</th><th class="px-2"></th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
             });
         }
         
         window.saveCostCloud = async (br, type, val) => { 
-            const current = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0, zone:'', branch_id: null}; 
+            const current = BRANCH_COSTS_CACHE[br] || {rent:0, gp:0, zone:''}; 
             if(type === 'rent') current.rent = Number(val); 
             if(type === 'gp') current.gp = Number(val); 
             if(type === 'zone') current.zone = val;
-            if(type === 'branch_id') current.branch_id = Number(val);
-
             BRANCH_COSTS_CACHE[br] = current; 
-            if(current.branch_id) BRANCH_COSTS_CACHE[`ID_${current.branch_id}`] = {rent: current.rent, gp: current.gp, zone: current.zone, branch_name: br};
-
-            await supabase.from(COST_TABLE).upsert({ 
-                branch_name: br, 
-                rent: current.rent, 
-                gp_percent: current.gp, 
-                zone: current.zone,
-                branch_id: current.branch_id 
-            }, { onConflict: 'branch_name' }); 
+            await supabase.from(COST_TABLE).upsert({ branch_name: br, rent: current.rent, gp_percent: current.gp, zone: current.zone }, { onConflict: 'branch_name' }); 
         };
         window.deleteCostCloud = async (br) => { if(!confirm("Reset?")) return; delete BRANCH_COSTS_CACHE[br]; renderCostSettings(); await supabase.from(COST_TABLE).delete().eq('branch_name', br); };
 
@@ -617,8 +634,12 @@
             const sB = document.getElementById('compStartB').value; const eB = document.getElementById('compEndB').value;
             if(!sA || !eA || !sB || !eB) return alert("Select dates");
 
-            const dA = await fetchData(sA, eA);
-            const dB = await fetchData(sB, eB);
+            let dA = await fetchData(sA, eA);
+            let dB = await fetchData(sB, eB);
+            
+            // Normalize for comparison too
+            dA = normalizeBranchNames(dA);
+            dB = normalizeBranchNames(dB);
 
             const calcTotal = d => d.reduce((a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}), {s:0,q:0});
             const rA = calcTotal(dA); 
@@ -632,24 +653,20 @@
             document.getElementById('compValB').innerText = cur.format(rB.s); 
             document.getElementById('compQtyB').innerText = num.format(rB.q);
             
-            // Dynamic Day Logic (Day 1, Day 2...)
-            const mapDaily = (data, startStr) => {
+            // Daily Logic
+            const mapDaily = (data) => {
                 const map = {};
-                const start = new Date(startStr);
                 data.forEach(r => {
-                    const current = new Date(r.transaction_date);
-                    const diffTime = Math.abs(current - start);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; 
-                    
-                    if (!map[diffDays]) map[diffDays] = {s:0, q:0};
-                    map[diffDays].s += Number(r.total_amount);
-                    map[diffDays].q += Number(r.quantity);
+                    const day = parseInt(r.transaction_date.split('-')[2]);
+                    if (!map[day]) map[day] = {s:0, q:0};
+                    map[day].s += Number(r.total_amount);
+                    map[day].q += Number(r.quantity);
                 });
                 return map;
             };
 
-            const mapA = mapDaily(dA, sA);
-            const mapB = mapDaily(dB, sB);
+            const mapA = mapDaily(dA);
+            const mapB = mapDaily(dB);
 
             const allDays = new Set([...Object.keys(mapA), ...Object.keys(mapB)]);
             const labels = Array.from(allDays).sort((a,b)=>a-b).map(d => `Day ${d}`);
@@ -685,8 +702,11 @@
                 const sB = `${yB}-01-01`;
                 const eB = `${yB}-12-31`;
 
-                const dA = await fetchData(sA, eA);
-                const dB = await fetchData(sB, eB);
+                let dA = await fetchData(sA, eA);
+                let dB = await fetchData(sB, eB);
+
+                dA = normalizeBranchNames(dA);
+                dB = normalizeBranchNames(dB);
 
                 const calcTotal = d => d.reduce((a,r)=>({s:a.s+(Number(r.total_amount)||0), q:a.q+(Number(r.quantity)||0)}), {s:0,q:0});
                 const rA = calcTotal(dA);
@@ -754,7 +774,9 @@
         // --- P&L ---
         async function loadPnLMonth() {
             const m = document.getElementById('pnlMonth').value; if(!m) return;
-            const [y, mo] = m.split('-'); const data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
+            let data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
+            // Apply Normalization
+            data = normalizeBranchNames(data);
             renderPnLTable(data, m);
         }
 
@@ -791,36 +813,21 @@
 
         window.downloadPnL = async () => {
             const m = document.getElementById('pnlMonth').value; if(!m) return alert("Select Month");
-            const [y, mo] = m.split('-'); const data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
+            const [y, mo] = m.split('-'); 
+            let data = await fetchData(`${y}-${mo}-01`, new Date(y, mo, 0).toISOString().split('T')[0]);
+            data = normalizeBranchNames(data);
+
             if(!data.length) return alert("No data");
             const costs = BRANCH_COSTS_CACHE;
             const report = [];
             const temp = {};
-            
-            const getBranchId = (name) => {
-                const match = (name || "").match(/^\d+/);
-                return match ? parseInt(match[0]) : '';
-            };
-
             data.forEach(r => { const b=r.branch_name; if(!temp[b]) temp[b]={s:0,q:0}; temp[b].s+=Number(r.total_amount); temp[b].q+=Number(r.quantity); });
 
             Object.entries(temp).forEach(([br, d]) => {
                 const s = costs[br] || {rent:0, gp:0, zone:''};
                 const gpDed = d.s * (s.gp/100);
                 const net = d.s - s.rent - gpDed;
-                // ADDED: Branch_ID
-                report.push({ 
-                    Group: getGroup(br), 
-                    Branch_ID: s.branch_id || getBranchId(br), 
-                    Branch: br, 
-                    Zone: s.zone, 
-                    Sales: d.s, 
-                    Qty: d.q, 
-                    Rent: s.rent, 
-                    GP_Percent: s.gp, 
-                    GP_Deduction: gpDed, 
-                    Net_Profit: net 
-                });
+                report.push({ Group: getGroup(br), Branch: br, Zone: s.zone, Sales: d.s, Qty: d.q, Rent: s.rent, GP_Percent: s.gp, GP_Deduction: gpDed, Net_Profit: net });
             });
 
             const csv = Papa.unparse(report);
@@ -868,20 +875,15 @@
             checkedBoxes.forEach(box => {
                 const row = box.closest('tr');
                 const cells = row.querySelectorAll('td');
-                // Extract data from DOM cells. NOTE: Indicies shifted because of checkbox column and new Branch ID column
-                // Layout: [Check], [Branch], [ID (Hidden?)], [Zone], [Type], [Stock], [AvgWD], [AvgWE], [TimeLeft]
-                // Wait, need to check renderPlanningTable to see actual indices.
-                // Current Render: Checkbox(0), Branch(1), BranchID(2), Zone(3), Type(4), Stock(5)...
-                
+                // Extract data from DOM cells: [Checkbox, Branch, Zone, Type, Stock, AvgWD, AvgWE, TimeLeft]
                 data.push({
                     Branch: cells[1].innerText,
-                    Branch_ID: cells[2].innerText, // Added
-                    Zone: cells[3].innerText,
-                    Type: cells[4].innerText,
-                    Stock: cells[5].innerText.replace(/,/g, ''),
-                    Avg_Weekday: cells[6].innerText.replace(/,/g, ''),
-                    Avg_Weekend: cells[7].innerText.replace(/,/g, ''),
-                    Est_Time_Left: cells[8].innerText
+                    Zone: cells[2].innerText,
+                    Type: cells[3].innerText,
+                    Stock: cells[4].innerText.replace(/,/g, ''),
+                    Avg_Weekday: cells[5].innerText.replace(/,/g, ''),
+                    Avg_Weekend: cells[6].innerText.replace(/,/g, ''),
+                    Est_Time_Left: cells[7].innerText
                 });
             });
 
@@ -1010,17 +1012,11 @@
                     const paperWeightedAvg = ((paperCalc.avgWD * 5) + (paperCalc.avgWE * 2)) / 7;
                     inkCalc.daysLeft = paperWeightedAvg > 0 ? (inkCalc.stock / paperWeightedAvg) : 999;
 
-                    // UPDATED: Get Zone matching by ID (Priority) or Name
-                    let zone = '-';
-                    if (BRANCH_COSTS_CACHE[`ID_${item.id}`]) {
-                        zone = BRANCH_COSTS_CACHE[`ID_${item.id}`].zone || '-';
-                    } else if (BRANCH_COSTS_CACHE[item.name]) {
-                        zone = BRANCH_COSTS_CACHE[item.name].zone || '-';
-                    }
+                    // UPDATED: Get Zone
+                    const zone = BRANCH_COSTS_CACHE[item.name]?.zone || '-';
 
-                    // Store ID for export
-                    tableData.push({ branch: item.name, zone: zone, brId: item.id, ...paperCalc });
-                    tableData.push({ branch: item.name, zone: zone, brId: item.id, ...inkCalc });
+                    tableData.push({ branch: item.name, zone: zone, ...paperCalc });
+                    tableData.push({ branch: item.name, zone: zone, ...inkCalc });
                 });
 
                 tableData.sort((a,b) => a.daysLeft - b.daysLeft);
@@ -1030,17 +1026,16 @@
                     const isCrit = rowItem.daysLeft < 7;
                     const isWarn = rowItem.daysLeft >= 7 && rowItem.daysLeft < 14;
                     const styleClass = isCrit ? 'stock-critical' : (isWarn ? 'stock-warning' : 'stock-good');
+                    // Add identifier class for filtering
                     const filterClass = isCrit ? 'row-critical' : (isWarn ? 'row-warning' : 'row-good');
                     
                     const dayText = rowItem.daysLeft > 365 ? '> 1 Year' : rowItem.daysLeft.toFixed(1) + ' Days';
                     const zoneColor = stringToColor(rowItem.zone);
 
-                    // Added Branch ID column
                     rows += `
                         <tr class="border-b hover:bg-slate-50 text-xs planning-row ${filterClass}">
                             <td class="px-4 py-2 text-center"><input type="checkbox" class="row-checkbox rounded border-slate-300"></td>
                             <td class="px-4 py-2 font-medium text-slate-700">${rowItem.branch}</td>
-                            <td class="px-4 py-2 text-slate-400 font-mono">${rowItem.brId}</td>
                             <td class="px-4 py-2 font-bold" style="color: ${zoneColor}">${rowItem.zone}</td>
                             <td class="px-4 py-2 text-slate-500">${rowItem.code || rowItem.type}</td>
                             <td class="px-4 py-2 text-right font-mono text-slate-800">${num.format(rowItem.stock)}</td>
@@ -1063,7 +1058,6 @@
                                     <tr>
                                         <th class="px-4 py-2 text-center w-8"><input type="checkbox" onclick="toggleSelectAll('${grp}', this)"></th>
                                         <th class="text-left px-4 py-2">Branch</th>
-                                        <th class="text-left px-4 py-2">ID</th>
                                         <th class="text-left px-4 py-2">Zone</th>
                                         <th class="text-left px-4 py-2">Type</th>
                                         <th class="text-right px-4">Stock</th>
@@ -1079,6 +1073,7 @@
                 `;
             });
             
+            // Apply current filters after render
             filterPlanningTable();
         }
 
@@ -1093,6 +1088,7 @@
                 rows.forEach(row => {
                     const textMatch = row.innerText.toUpperCase().indexOf(input) > -1;
                     
+                    // Filter Logic by Type buttons
                     let typeMatch = false;
                     if (row.classList.contains('row-critical') && planningFilters.critical) typeMatch = true;
                     if (row.classList.contains('row-warning') && planningFilters.warning) typeMatch = true;
@@ -1111,6 +1107,7 @@
 
         window.openGroupModal = (grp) => {
             const s = document.getElementById('branchStart').value; const e = document.getElementById('branchEnd').value;
+            // Filter using Normalized Data
             const data = GLOBAL_DATA.filter(r => r.transaction_date >= s && r.transaction_date <= e && getGroup(r.branch_name) === grp);
             const prod={}, br={};
             data.forEach(r=>{ const v=Number(r.total_amount)||0; prod[r.product||"?"]=(prod[r.product||"?"]||0)+v; br[r.branch_name||"?"]=(br[r.branch_name||"?"]||0)+v; });
@@ -1138,19 +1135,62 @@
         
         function setupEventListeners() {
              document.getElementById('globalImportBtn').onclick=()=>document.getElementById('globalCsvInput').click();
-             document.getElementById('globalCsvInput').onchange=async(e)=>{ const files=e.target.files; if(!files.length) return; showLoading(true); for(let i=0;i<files.length;i++){ const f=files[i]; const {data:exists}=await supabase.from(LOG_TABLE).select('*').eq('filename',f.name).single(); if(exists){alert("File exists!");continue;} await new Promise(r=>Papa.parse(f,{header:false,skipEmptyLines:true,complete:async(res)=>{ const rows=res.data.map(transform).filter(x=>x); const batch=500; for(let j=0;j<Math.ceil(rows.length/batch);j++) { await supabase.from(TABLE).insert(rows.slice(j*batch,(j+1)*batch)); updateProgress((j / Math.ceil(rows.length/batch)) * 100); } await supabase.from(LOG_TABLE).insert({filename:f.name, total_rows:rows.length}); r(); }})); } showLoading(false); alert("Done"); fetchDataAndRender(); };
-             document.getElementById('deleteByFileBtn').onclick=()=>document.getElementById('deleteFileInput').click();
-             document.getElementById('deleteFileInput').onchange=async(e)=>{ 
-                const f=e.target.files[0]; 
-                if(!f) return;
-                // Added Passcode for Delete File
-                const pass = prompt("Enter passcode to delete file:");
-                if(pass !== "001") { alert("Wrong passcode!"); e.target.value = ''; return; }
-                if(!confirm("Confirm delete?")) return; 
-                
-                showLoading(true); 
-                Papa.parse(f, {header:false, skipEmptyLines:true, complete:async(res)=>{ const rows=res.data.map(transform).filter(x=>x); const batch=50; for(let j=0;j<Math.ceil(rows.length/batch);j++) { const chunk=rows.slice(j*batch,(j+1)*batch); await Promise.all(chunk.map(r=>supabase.from(TABLE).delete().match({transaction_date:r.transaction_date, transaction_time:r.transaction_time, branch_name:r.branch_name, total_amount:r.total_amount}))); } await supabase.from(LOG_TABLE).delete().eq('filename',f.name); showLoading(false); alert("Deleted"); fetchDataAndRender(); }}); 
+             
+             // CHANGE 1: Upload Logic to insert branch_id to costs table
+             document.getElementById('globalCsvInput').onchange=async(e)=>{ 
+                 const files=e.target.files; 
+                 if(!files.length) return; 
+                 showLoading(true); 
+                 for(let i=0;i<files.length;i++){ 
+                     const f=files[i]; 
+                     const {data:exists}=await supabase.from(LOG_TABLE).select('*').eq('filename',f.name).single(); 
+                     if(exists){alert("File exists!");continue;} 
+                     await new Promise(r=>Papa.parse(f,{header:false,skipEmptyLines:true,complete:async(res)=>{ 
+                         const rows=res.data.map(transform).filter(x=>x); 
+                         const batch=500; 
+                         for(let j=0;j<Math.ceil(rows.length/batch);j++) { 
+                             await supabase.from(TABLE).insert(rows.slice(j*batch,(j+1)*batch)); 
+                             updateProgress((j / Math.ceil(rows.length/batch)) * 100); 
+                         } 
+                         await supabase.from(LOG_TABLE).insert({filename:f.name, total_rows:rows.length}); 
+                         
+                         // Insert branch IDs to costs table
+                         const uniqueBranches = {};
+                         rows.forEach(r => {
+                             if(r.branch_id && r.branch_name) {
+                                 uniqueBranches[r.branch_id] = r.branch_name;
+                             }
+                         });
+                         const costUpdates = Object.entries(uniqueBranches).map(([id, name]) => ({
+                             branch_id: parseInt(id),
+                             branch_name: name
+                         }));
+                         if(costUpdates.length > 0) {
+                             // Attempt upsert. Assuming branch_id is a unique key or PK now as requested.
+                             // If schema hasn't changed on DB side, this might fail if PK is just branch_name, 
+                             // but we proceed as per instruction to add branch_id.
+                             await supabase.from(COST_TABLE).upsert(costUpdates, { onConflict: 'branch_id', ignoreDuplicates: true });
+                         }
+
+                         r(); 
+                     }})); 
+                 } 
+                 showLoading(false); 
+                 alert("Done"); 
+                 fetchDataAndRender(); 
              };
+
+             // CHANGE 2: Delete Passcode
+             document.getElementById('deleteByFileBtn').onclick = () => {
+                 const pass = prompt("Enter passcode to delete:");
+                 if(pass === "001") {
+                     document.getElementById('deleteFileInput').click();
+                 } else {
+                     alert("Wrong passcode!");
+                 }
+             };
+
+             document.getElementById('deleteFileInput').onchange=async(e)=>{ const f=e.target.files[0]; if(!f||!confirm("Delete?")) return; showLoading(true); Papa.parse(f, {header:false, skipEmptyLines:true, complete:async(res)=>{ const rows=res.data.map(transform).filter(x=>x); const batch=50; for(let j=0;j<Math.ceil(rows.length/batch);j++) { const chunk=rows.slice(j*batch,(j+1)*batch); await Promise.all(chunk.map(r=>supabase.from(TABLE).delete().match({transaction_date:r.transaction_date, transaction_time:r.transaction_time, branch_name:r.branch_name, total_amount:r.total_amount}))); } await supabase.from(LOG_TABLE).delete().eq('filename',f.name); showLoading(false); alert("Deleted"); fetchDataAndRender(); }}); };
              document.getElementById('globalResetBtn').onclick=async()=>{ 
                  const pass = prompt("Enter passcode to reset DB:");
                  if(pass === "001") {
