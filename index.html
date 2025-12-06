@@ -271,7 +271,7 @@
         const LOG_TABLE = 'upload_logs';
         const COST_TABLE = 'branch_costs';
         const STOCK_TABLE = 'current_stocks'; 
-        const MAX_FETCH = 300000; 
+        const MAX_FETCH = 1000000; 
 
         let supabase, GLOBAL_DATA = [], charts = {};
         // 3. Cache for Branch Costs (Name) and Branch Costs (ID)
@@ -353,31 +353,51 @@
             });
         }
 
-        async function fetchData(s, e) {
-            showLoading(true, "Fetching...");
-            let allRows = [], from = 0, pageSize = 1000, keepFetching = true;
-            try {
-                while(keepFetching) {
-                    if(allRows.length >= MAX_FETCH) break;
-                    const { data, error } = await supabase.from(TABLE).select('*').gte('transaction_date', s).lte('transaction_date', e).range(from, from + pageSize - 1).order('id', {ascending: false});
-                    if (error) throw error;
-                    if (data.length) { 
-                        allRows = allRows.concat(data); 
-                        from += pageSize; 
-                    }
-                    let progress = (from / TOTAL_DB_ROWS) * 100;
-                    if(progress > 95) progress = 95;
-                    updateProgress(progress);
-                    if (data.length < pageSize) keepFetching = false;
-                    await new Promise(r => setTimeout(r, 0));
-                }
-            } catch(e) { alert("Error: " + e.message); return []; } 
-            finally { 
-                updateProgress(100);
-                setTimeout(() => showLoading(false), 300); 
+async function fetchData(s, e) {
+    showLoading(true, "Fetching...");
+    // สังเกต pageSize ตัว S ใหญ่
+    let allRows = [], from = 0, pageSize = 1000, keepFetching = true; 
+    try {
+        while(keepFetching) {
+            // เช็คว่าเกิน Limit ที่ตั้งไว้ไหม (MAX_FETCH ที่เราแก้ไป)
+            if(allRows.length >= MAX_FETCH) break;
+
+            const { data, error } = await supabase
+                .from(TABLE)
+                // เลือกเฉพาะ Column ที่ใช้ (ถูกต้องแล้วครับ)
+                .select('id, transaction_date, timestamp, branch_name, total_amount, quantity, product') 
+                .gte('transaction_date', s)
+                .lte('transaction_date', e)
+                .range(from, from + pageSize - 1) // แก้ pagesize เป็น pageSize (S ใหญ่)
+                .order('id', {ascending: false});
+
+            if (error) throw error;
+            
+            if (data.length) { 
+                allRows = allRows.concat(data); 
+                from += pageSize; // ใช้ pageSize (S ใหญ่)
             }
-            return allRows;
+
+            // --- ส่วนสำคัญที่หายไป (ต้องใส่ครับ) ---
+            
+            // 1. อัปเดตหลอด Loading
+            let progress = (from / TOTAL_DB_ROWS) * 100;
+            if(progress > 95) progress = 95;
+            updateProgress(progress);
+
+            // 2. เช็คว่าข้อมูลหมดหรือยัง (ถ้าได้มาน้อยกว่า 1000 แปลว่าหมดแล้ว)
+            if (data.length < pageSize) keepFetching = false;
+
+            // 3. พักหายใจนิดนึง กันหน้าเว็บค้าง
+            await new Promise(r => setTimeout(r, 0));
         }
+    } catch(e) { alert("Error: " + e.message); return []; } 
+    finally { 
+        updateProgress(100);
+        setTimeout(() => showLoading(false), 300); 
+    }
+    return allRows;
+}
 
         async function fetchDataAndRender() {
             const s = document.getElementById('dashStart').value;
@@ -1077,3 +1097,4 @@
     </script>
 </body>
 </html>
+
